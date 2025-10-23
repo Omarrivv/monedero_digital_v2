@@ -3,6 +3,45 @@
 
 Una aplicación completa de monedero digital para padres e hijos, construida con React, Node.js, MongoDB y integración blockchain.
 
+## INICIO
+
+### ✅ 1) Descripción
+
+Monedero Digital v2 es una DApp orientada a familias: permite a padres/tutores crear y gestionar cuentas para sus hijos, asignar límites de gasto, transferir fondos entre wallets y efectuar pagos en comercios autorizados. Usa un frontend moderno (React + Vite), backend en Node.js con MongoDB y soporte para wallets Ethereum (Metamask). Además incorpora subida y gestión de imágenes mediante Cloudinary.
+
+### ✅ 2) Objetivos
+
+- Proveer una plataforma segura y accesible para que padres administren el dinero de sus hijos mediante wallets.
+- Permitir control parental mediante límites de gasto por día/semana y categorías.
+- Ofrecer a comercios una forma sencilla de aceptar pagos desde las wallets de los hijos.
+- Mantener trazabilidad completa de transacciones y actividades (historial y auditoría).
+
+### ✅ 3) Beneficios
+
+- Control y visibilidad para padres sobre el gasto de los hijos.
+- Flujo de pagos simplificado para comercios pequeños.
+- Registro de transacciones y límites con fácil visualización.
+- Arquitectura modular que facilita pruebas y despliegues.
+
+### ✅ 4) Características
+
+- Roles: Padre/Tutor, Hijo y Comercio.
+- Calendario de límites y categorías de gasto.
+- Transferencias internas y pagos a comercios.
+- Perfiles con imagen (Cloudinary) y edición de datos.
+- Historial de transacciones y filtros.
+- Integración con Metamask y soporte para testnets.
+
+### ✅ 5) Integrantes del equipo
+
+- Frank Salazar — Frontend (React, Vite, Tailwind).  
+	![Frank Salazar](docs/team/frank.jpg "Frank Salazar")
+
+- Omar Rivera — Backend (Node.js, Express, MongoDB, Smart Contracts).  
+	![Omar Rivera](docs/team/omar.jpg "Omar Rivera")
+
+> Nota: coloca las fotos en `docs/team/` (por ejemplo `docs/team/frank.jpg`). Si no tienes las imágenes, reemplaza las rutas por URLs públicas o elimina las líneas de imagen.
+
 ## 🚀 Características
 
 - **👨‍👩‍👧‍👦 Gestión Familiar**: Los padres pueden registrar y gestionar cuentas de sus hijos

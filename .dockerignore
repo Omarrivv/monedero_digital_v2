@@ -1,0 +1,48 @@
+# Archivos de entorno
+.env
+.env.local
+.env.docker
+
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos temporales
+.tmp/
+temp/
+*/temp-images/*
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# Cache
+.cache/
+.parcel-cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# MongoDB
+data/
+
+# Cloudinary uploads locales
+uploads/

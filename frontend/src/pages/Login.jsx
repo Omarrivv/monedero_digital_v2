@@ -41,6 +41,7 @@ function Login() {
 
   const { account, connectWallet, isConnecting } = useWeb3();
   const { checkUserAuthentication, loginHijo, user, userRole, isLoading: authLoading } = useAuth();
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
   // Redirigir automáticamente cuando el usuario se autentica
   useEffect(() => {
@@ -78,8 +79,8 @@ function Login() {
     
     try {
       // Debug: Primero verificar qué usuarios hay en la BD
-      console.log('Verificando usuarios en BD...');
-      const debugResponse = await fetch(`${import.meta.env.VITE_API_URL}/auth/debug/users`);
+  console.log('Verificando usuarios en BD...');
+  const debugResponse = await fetch(`${API_BASE}/auth/debug/users`);
       const debugData = await debugResponse.json();
       console.log('Usuarios en BD:', debugData);
       

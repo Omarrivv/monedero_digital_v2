@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import paymentService from '../../services/paymentService'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 import { 
   Calendar,
   Filter,
@@ -118,7 +119,7 @@ function HistorialTransaccionesAvanzado({ userRole, userId, redFiltro, redesDisp
       setCargando(true)
       // Usar el endpoint de transacciones simples que tiene la info de red
       const token = localStorage.getItem('authToken')
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/transacciones-simples/mis-transacciones`, {
+  const response = await fetch(`${API_BASE}/transacciones-simples/mis-transacciones`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -246,7 +247,7 @@ function HistorialTransaccionesAvanzado({ userRole, userId, redFiltro, redesDisp
       } else {
         // Si no está en local, buscar en el servidor
         const token = localStorage.getItem('authToken')
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/transacciones-simples/mis-transacciones`, {
+  const response = await fetch(`${API_BASE}/transacciones-simples/mis-transacciones`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

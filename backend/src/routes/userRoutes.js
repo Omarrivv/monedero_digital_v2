@@ -370,7 +370,40 @@ router.put('/profile/photo', auth, uploadProfileImage, handleUploadErrors, async
       });
     }
 
-    const imageUrl = req.file.path; // Cloudinary URL
+    let imageUrl;
+
+    // Si multer ya subió a Cloudinary (CloudinaryStorage)
+    if (req.file.path && !req.file.buffer) {
+      console.log('✅ Imagen ya subida por CloudinaryStorage:', req.file.path);
+      imageUrl = req.file.path;
+    } else if (req.file.buffer) {
+      // Si tenemos buffer (memoryStorage), subir manualmente a Cloudinary
+      console.log('🚀 Subiendo buffer a Cloudinary...');
+      
+      // Convertir buffer a base64 para Cloudinary
+      const base64String = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      
+      // Subir a Cloudinary con configuración simple
+      const { uploadImage } = require('../utils/cloudinary');
+      const uploadResult = await uploadImage(base64String, {
+        folder: 'monedero_digital/profile',
+        transformation: [
+          { width: 400, height: 400, crop: 'limit' },
+          { quality: 'auto:good' }
+        ],
+        timeout: 60000
+      });
+
+      console.log('✅ Upload manual exitoso:', uploadResult.url);
+      imageUrl = uploadResult.url;
+    } else {
+      // Si llegamos aquí, no hay ni path ni buffer
+      console.log('❌ No se encontró ni path ni buffer en el archivo');
+      return res.status(400).json({
+        success: false,
+        message: 'Archivo procesado incorrectamente'
+      });
+    }
 
     // Obtener usuario actual para eliminar imagen anterior si existe
     const currentUser = await User.findById(req.user.userId);

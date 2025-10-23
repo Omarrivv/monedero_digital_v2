@@ -1,7 +1,8 @@
 import apiService from './apiService'
 import { debugAuth } from '../utils/debugAuth'
 
-const API_URL = import.meta.env.VITE_API_URL
+// Fallback cuando VITE_API_URL no está definido en el entorno de Vite
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 class AnalyticsService {
   // Obtener analytics generales del usuario

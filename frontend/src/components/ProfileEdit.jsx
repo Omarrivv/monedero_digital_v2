@@ -14,6 +14,7 @@ const ProfileEdit = ({ user, onClose, onUpdate }) => {
   const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
   useEffect(() => {
     if (user) {
@@ -70,21 +71,35 @@ const ProfileEdit = ({ user, onClose, onUpdate }) => {
 
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/profile/photo`, {
+      const response = await fetch(`${API_BASE}/users/profile/photo`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Error al subir imagen');
+      // Some servers may return non-JSON (or empty) on error; guard the parse
+      const contentType = response.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (e) {
+          console.warn('Respuesta JSON inválida al subir imagen:', e);
+          data = null;
+        }
+      } else {
+        // If not JSON, read text for debugging
+        const text = await response.text();
+        console.warn('Respuesta no JSON al subir imagen:', text.slice(0, 200));
       }
 
-      return data.imageUrl;
+      if (!response.ok) {
+        const message = data?.message || `Error al subir imagen (status ${response.status})`;
+        throw new Error(message);
+      }
+
+      return data?.data?.url || data?.imageUrl || null;
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error(error.message || 'Error al subir la imagen');
@@ -111,7 +126,7 @@ const ProfileEdit = ({ user, onClose, onUpdate }) => {
 
       // Actualizar datos del perfil
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/profile`, {
+      const response = await fetch(`${API_BASE}/users/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -120,10 +135,23 @@ const ProfileEdit = ({ user, onClose, onUpdate }) => {
         body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type') || '';
+      let data = null;
+      if (contentType.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch (e) {
+          console.warn('Respuesta JSON inválida al actualizar perfil:', e);
+          data = null;
+        }
+      } else {
+        const text = await response.text();
+        console.warn('Respuesta no JSON al actualizar perfil:', text.slice(0, 200));
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Error al actualizar perfil');
+        const message = data?.message || `Error al actualizar perfil (status ${response.status})`;
+        throw new Error(message);
       }
 
       // Actualizar la imagen en el usuario si se subió una nueva
