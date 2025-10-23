@@ -1,0 +1,4 @@
+// Ejecuta esto en la consola del navegador
+localStorage.setItem('authToken', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGY1YTlhMGY4YzlhYzZiYTgyN2M1NzkiLCJyb2xlIjoicGFkcmUiLCJ3YWxsZXRBZGRyZXNzIjoiMHgwYjkxNDdkZDA4ZDY5YmIxMWU0ZDE3NjI0MzA4YjMzZWY5OWQ1M2M2IiwiaWF0IjoxNzYwOTQxNTMxLCJleHAiOjE3NjEwMjc5MzF9.yke-1r7sJQJt4CmoRpqP5aPffW6zVma4pCimzpqUKWk');
+console.log('Token establecido');
+window.location.reload();
