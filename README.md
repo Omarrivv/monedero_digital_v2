@@ -1,3 +1,4 @@
+
 # 💰 Monedero Digital v2
 
 Una aplicación completa de monedero digital para padres e hijos, construida con React, Node.js, MongoDB y integración blockchain.
@@ -148,26 +149,6 @@ monedero_digital_v2/
 ### Límites
 - `POST /api/auth/set-limits` - Establecer límites de gasto
 - `GET /api/auth/get-limits/:hijoId` - Obtener límites
-
-## 🧪 Testing
-
-### Probar conexión a MongoDB
-```bash
-cd backend
-node test-connection.js
-```
-
-### Probar upload de imágenes
-```bash
-cd backend
-node test-upload-endpoint.js
-```
-
-### Probar registro de padre
-```bash
-cd backend
-node test-registro-endpoint.js
-```
 
 ## 🚀 Deployment
 
