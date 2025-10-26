@@ -9,7 +9,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev',
+        target: 'https://poisonous-toad-r47w9qgrjp5c55p7-5000.app.github.dev',
         changeOrigin: true,
         secure: true,
         rewrite: (path) => path,

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // � SIN  CORS - USA PROXY AUTOMÁTICO
-const API_BASE_URL = "https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev/api";
+const API_BASE_URL = "https://poisonous-toad-r47w9qgrjp5c55p7-5000.app.github.dev/api";
 
 console.log("🔧 API Service configurado con URL:", API_BASE_URL);
 
