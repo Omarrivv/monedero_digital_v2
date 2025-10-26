@@ -1,6 +1,7 @@
-// 🔧 Load environment variables FIRST
+// 🔧 Load environment variables FIRST - SOLO del .env principal
 const dotenv = require('dotenv');
-dotenv.config({ path: '../.env' }); // Usar .env del directorio raíz
+const path = require('path');
+dotenv.config({ path: path.join(__dirname, '../.env') }); // Usar SOLO .env del directorio raíz
 
 const express = require('express');
 const cors = require('cors');
@@ -94,8 +95,9 @@ const corsOptions = {
     }
 
     // En Codespaces, permitir cualquier subdominio de github.dev
-    if (config.ENVIRONMENT.type === 'codespaces') {
+    if (config.ENVIRONMENT.type === 'codespaces' || process.env.CODESPACE_NAME) {
       if (!origin || origin.includes('app.github.dev')) {
+        console.log(`✅ CORS allowed for Codespaces origin: ${origin}`)
         return callback(null, true)
       }
     }
@@ -105,10 +107,21 @@ const corsOptions = {
     
     // Verificar si el origin está en la lista permitida
     const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Coincidencia exacta
       if (allowedOrigin === origin) return true
       
+      // Si es una expresión regular
+      if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin)
+      }
+      
+      // Patrón wildcard para Codespaces
+      if (typeof allowedOrigin === 'string' && allowedOrigin.includes('*.app.github.dev')) {
+        return origin && origin.includes('app.github.dev')
+      }
+      
       // Permitir subdominios para plataformas cloud
-      if (config.ENVIRONMENT.type !== 'local') {
+      if (config.ENVIRONMENT.type !== 'local' && typeof allowedOrigin === 'string') {
         const allowedDomain = allowedOrigin.replace(/^https?:\/\//, '').split('.').slice(-2).join('.')
         const originDomain = origin.replace(/^https?:\/\//, '').split('.').slice(-2).join('.')
         return allowedDomain === originDomain
@@ -145,6 +158,30 @@ const corsOptions = {
   ],
   exposedHeaders: ['X-Total-Count'],
   maxAge: 86400 // 24 hours
+}
+
+// 🔧 Middleware específico para Codespaces
+if (process.env.CODESPACE_NAME || config.ENVIRONMENT.type === 'codespaces') {
+  app.use((req, res, next) => {
+    const origin = req.headers.origin
+    
+    // Si es un request de Codespaces, agregar headers CORS manualmente
+    if (origin && origin.includes('app.github.dev')) {
+      res.header('Access-Control-Allow-Origin', origin)
+      res.header('Access-Control-Allow-Credentials', 'true')
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin')
+      
+      console.log(`🔧 Codespaces CORS headers added for: ${origin}`)
+    }
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200)
+    }
+    
+    next()
+  })
 }
 
 app.use(cors(corsOptions))

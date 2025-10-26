@@ -99,17 +99,8 @@ function setupEnvironment() {
     console.log('✅ Archivo .env actualizado')
   }
   
-  // Configurar frontend si es necesario
-  const frontendEnvPath = path.join(__dirname, '../frontend/.env.local')
-  if (env.type !== 'local') {
-    const frontendEnvContent = `# 🎨 AUTO-GENERATED FOR ${env.type.toUpperCase()}
-VITE_API_URL=${env.backendUrl}/api
-VITE_BACKEND_URL=${env.backendUrl}
-VITE_DEBUG=true
-`
-    fs.writeFileSync(frontendEnvPath, frontendEnvContent)
-    console.log('✅ Frontend .env.local actualizado')
-  }
+  // NO crear archivos .env adicionales - todo va en el .env principal
+  console.log('📋 Frontend se configurará automáticamente desde el .env principal')
   
   console.log('\n🚀 Configuración completada!')
   console.log('   La aplicación se adaptará automáticamente al entorno')

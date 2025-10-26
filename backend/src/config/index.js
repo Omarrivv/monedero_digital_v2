@@ -150,8 +150,12 @@ const config = {
       case 'codespaces':
         origins.push(
           `https://${environment.name}-3000.app.github.dev`,
-          `https://${environment.name}-5173.app.github.dev`
+          `https://${environment.name}-5173.app.github.dev`,
+          // Permitir cualquier codespace de github.dev
+          'https://*.app.github.dev'
         )
+        // Agregar patrón wildcard para todos los codespaces
+        origins.push(/^https:\/\/.*\.app\.github\.dev$/)
         break
       case 'render':
         // Render apps usually have predictable URLs

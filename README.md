@@ -97,7 +97,7 @@ cd backend
 npm install
 ```
 
-Crear archivo `.env` basado en `.env.example`:
+Crear archivo `.env` basado en `.env.example` (SOLO en la raíz del proyecto):
 ```bash
 cp .env.example .env
 ```

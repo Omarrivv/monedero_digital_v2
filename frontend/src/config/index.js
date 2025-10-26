@@ -6,38 +6,40 @@ const detectFrontendEnvironment = () => {
   const hostname = window.location.hostname
   const protocol = window.location.protocol
   
-  // Codespaces
+  // Codespaces - Detectar automáticamente del hostname
   if (hostname.includes('app.github.dev')) {
     const codespaceName = hostname.split('-')[0]
+    const backendUrl = `https://${codespaceName}-5000.app.github.dev`
+    
     return {
       type: 'codespaces',
       name: codespaceName,
-      backendUrl: `https://${codespaceName}-5000.app.github.dev`,
-      apiUrl: `https://${codespaceName}-5000.app.github.dev/api`
+      backendUrl: backendUrl,
+      apiUrl: `${backendUrl}/api`
     }
   }
   
-  // Vercel
+  // Vercel - Frontend en Vercel, backend en otra plataforma
   if (hostname.includes('vercel.app')) {
     return {
       type: 'vercel',
       name: hostname.split('.')[0],
-      backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
-      apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      backendUrl: 'https://tu-backend.onrender.com', // Configurar manualmente
+      apiUrl: 'https://tu-backend.onrender.com/api'
     }
   }
   
-  // Netlify
+  // Netlify - Frontend en Netlify, backend en otra plataforma
   if (hostname.includes('netlify.app')) {
     return {
       type: 'netlify',
       name: hostname.split('.')[0],
-      backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
-      apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      backendUrl: 'https://tu-backend.onrender.com', // Configurar manualmente
+      apiUrl: 'https://tu-backend.onrender.com/api'
     }
   }
   
-  // Render
+  // Render - Fullstack en Render
   if (hostname.includes('onrender.com')) {
     return {
       type: 'render',
@@ -47,23 +49,23 @@ const detectFrontendEnvironment = () => {
     }
   }
   
-  // Railway
+  // Railway - Fullstack en Railway
   if (hostname.includes('up.railway.app')) {
     return {
       type: 'railway',
       name: hostname.split('.')[0],
-      backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
-      apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      backendUrl: `${protocol}//${hostname}`,
+      apiUrl: `${protocol}//${hostname}/api`
     }
   }
   
-  // Heroku
+  // Heroku - Fullstack en Heroku
   if (hostname.includes('herokuapp.com')) {
     return {
       type: 'heroku',
       name: hostname.split('.')[0],
-      backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
-      apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      backendUrl: `${protocol}//${hostname}`,
+      apiUrl: `${protocol}//${hostname}/api`
     }
   }
   
@@ -72,8 +74,8 @@ const detectFrontendEnvironment = () => {
     return {
       type: 'production',
       name: hostname,
-      backendUrl: import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000',
-      apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      backendUrl: 'https://api.tu-dominio.com', // Configurar manualmente
+      apiUrl: 'https://api.tu-dominio.com/api'
     }
   }
   
@@ -93,9 +95,9 @@ const config = {
   NODE_ENV: import.meta.env.MODE || 'development',
   ENVIRONMENT: environment,
   
-  // 🖥️ API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_URL || environment.apiUrl,
-  BACKEND_URL: import.meta.env.VITE_BACKEND_URL || environment.backendUrl,
+  // 🖥️ API Configuration - Solo del .env principal
+  API_BASE_URL: environment.apiUrl,
+  BACKEND_URL: environment.backendUrl,
   
   // 🔗 Blockchain
   ETHEREUM_RPC: import.meta.env.VITE_ETHEREUM_RPC_URL || 'https://ethereum.publicnode.com',
