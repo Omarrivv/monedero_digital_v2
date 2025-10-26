@@ -6,14 +6,14 @@ const detectFrontendEnvironment = () => {
   const hostname = window.location.hostname
   const protocol = window.location.protocol
   
-  // Codespaces - Detectar automáticamente del hostname
+  // Codespaces - Usar URLs fijas del .env principal
   if (hostname.includes('app.github.dev')) {
-    const codespaceName = hostname.split('-')[0]
-    const backendUrl = `https://${codespaceName}-5000.app.github.dev`
+    // URLs actualizadas desde el .env principal para Codespaces
+    const backendUrl = 'https://sinister-spooky-orb-qrwpq59q5v7fx9jx-5000.app.github.dev'
     
     return {
       type: 'codespaces',
-      name: codespaceName,
+      name: hostname.split('-')[0],
       backendUrl: backendUrl,
       apiUrl: `${backendUrl}/api`
     }
@@ -125,6 +125,19 @@ if (config.IS_DEVELOPMENT) {
   console.log('   Backend URL:', config.BACKEND_URL)
   console.log('   Debug Mode:', config.DEBUG)
   console.log('   Current URL:', window.location.href)
+  console.log('   Hostname:', window.location.hostname)
+  
+  // Test de conectividad
+  console.log('🔍 Testing backend connectivity...')
+  fetch(config.BACKEND_URL + '/health')
+    .then(response => response.json())
+    .then(data => {
+      console.log('✅ Backend is reachable:', data)
+    })
+    .catch(error => {
+      console.error('❌ Backend is NOT reachable:', error.message)
+      console.error('🔧 Check if backend is running on:', config.BACKEND_URL)
+    })
 }
 
 export default config
