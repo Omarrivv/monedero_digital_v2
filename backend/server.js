@@ -235,7 +235,21 @@ if (process.env.CODESPACE_NAME || config.ENVIRONMENT.type === "codespaces") {
   });
 }
 
-app.use(cors(corsOptions));
+// 🌐 CORS ABIERTO PARA TODO - SIMPLE
+app.use(
+  cors({
+    origin: true, // Permitir CUALQUIER origen
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
+  })
+);
 app.use(morgan("combined"));
 // Aplicar rate limiting solo en producción para ciertos endpoints
 if (process.env.NODE_ENV === "production") {
