@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Proxy</title>
+</head>
+<body>
+    <h1>Test Proxy</h1>
+    <button onclick="testProxy()">Test API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testProxy() {
+            try {
+                console.log('Testing proxy...');
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                console.log('Proxy works!', data);
+            } catch (error) {
+                console.error('Proxy failed:', error);
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>

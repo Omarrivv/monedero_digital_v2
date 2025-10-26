@@ -2,7 +2,8 @@ import axios from "axios";
 
 // � SIN  CORS - USA PROXY AUTOMÁTICO
 const apiService = axios.create({
-  baseURL: "/api", // Vite hace proxy automático
+  baseURL:
+    "https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev/api", // URL directa temporalmente
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",

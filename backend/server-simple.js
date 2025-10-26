@@ -34,8 +34,11 @@ connectDB();
 // Middleware básico
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-// SIN CORS - El frontend usa proxy
-// app.use(cors()) // ¡ELIMINADO!
+// CORS temporal hasta que funcione el proxy
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
