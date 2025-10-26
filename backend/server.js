@@ -1,292 +1,355 @@
 // 🔧 Load environment variables FIRST - SOLO del .env principal
-const dotenv = require('dotenv');
-const path = require('path');
-dotenv.config({ path: path.join(__dirname, '../.env') }); // Usar SOLO .env del directorio raíz
+const dotenv = require("dotenv");
+const path = require("path");
+dotenv.config({ path: path.join(__dirname, "../.env") }); // Usar SOLO .env del directorio raíz
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
+const express = require("express");
+const cors = require("cors");
+const helmet = require("helmet");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
 
 // 📋 Import centralized configuration
-const config = require('./src/config');
-const connectDB = require('./src/utils/database');
+const config = require("./src/config");
+const connectDB = require("./src/utils/database");
 
 // Import routes AFTER loading environment variables
-const authRoutes = require('./src/routes/authRoutes');
-const userRoutes = require('./src/routes/userRoutes');
-const transactionRoutes = require('./src/routes/transactionRoutes');
-const productRoutes = require('./src/routes/productRoutes');
-const limitsRoutes = require('./src/routes/limitsRoutes');
-const limitesNuevos = require('./src/routes/limitesNuevos');
-const limitesSimples = require('./src/routes/limitesSimples');
-const transaccionesSimples = require('./src/routes/transaccionesSimples');
-const uploadSimple = require('./src/routes/uploadSimple');
-const comercioRoutes = require('./src/routes/comercioRoutes');
-const uploadRoutes = require('./src/routes/uploadRoutes');
+const authRoutes = require("./src/routes/authRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const transactionRoutes = require("./src/routes/transactionRoutes");
+const productRoutes = require("./src/routes/productRoutes");
+const limitsRoutes = require("./src/routes/limitsRoutes");
+const limitesNuevos = require("./src/routes/limitesNuevos");
+const limitesSimples = require("./src/routes/limitesSimples");
+const transaccionesSimples = require("./src/routes/transaccionesSimples");
+const uploadSimple = require("./src/routes/uploadSimple");
+const comercioRoutes = require("./src/routes/comercioRoutes");
+const uploadRoutes = require("./src/routes/uploadRoutes");
 
-const app = express()
-const PORT = config.PORT
+const app = express();
+const PORT = config.PORT;
 
 // 🔧 Configure trust proxy for cloud environments
 const needsTrustProxy = [
-  'codespaces', 'render', 'railway', 'heroku', 'vercel', 'netlify', 'production'
-].includes(config.ENVIRONMENT.type)
+  "codespaces",
+  "render",
+  "railway",
+  "heroku",
+  "vercel",
+  "netlify",
+  "production",
+].includes(config.ENVIRONMENT.type);
 
 if (needsTrustProxy) {
-  app.set('trust proxy', 1)
-  console.log(`🔧 Trust proxy enabled for ${config.ENVIRONMENT.type} environment`)
+  app.set("trust proxy", 1);
+  console.log(
+    `🔧 Trust proxy enabled for ${config.ENVIRONMENT.type} environment`
+  );
 }
 
 // 📊 Log configuration on startup
-console.log('🚀 Starting Monedero Digital Backend...')
-console.log('📋 Configuration:')
-console.log(`   Environment: ${config.NODE_ENV}`)
-console.log(`   Platform: ${config.ENVIRONMENT.type} (${config.ENVIRONMENT.name})`)
-console.log(`   Port: ${PORT}`)
-console.log(`   Frontend URL: ${config.FRONTEND_URL}`)
-console.log(`   Backend URL: ${config.BACKEND_URL}`)
-console.log(`   MongoDB: ${config.MONGODB_URI ? '✅ Configured' : '❌ Missing'}`)
-console.log(`   Cloudinary: ${config.CLOUDINARY.CONFIGURED ? '✅ Configured' : '❌ Missing'}`)
-console.log(`   Debug Mode: ${config.DEBUG ? '✅ Enabled' : '❌ Disabled'}`)
-console.log(`   Trust Proxy: ${needsTrustProxy ? '✅ Enabled' : '❌ Disabled'}`)
-console.log(`   CORS Origins: ${config.CORS_ORIGINS.length} configured`)
+console.log("🚀 Starting Monedero Digital Backend...");
+console.log("📋 Configuration:");
+console.log(`   Environment: ${config.NODE_ENV}`);
+console.log(
+  `   Platform: ${config.ENVIRONMENT.type} (${config.ENVIRONMENT.name})`
+);
+console.log(`   Port: ${PORT}`);
+console.log(`   Frontend URL: ${config.FRONTEND_URL}`);
+console.log(`   Backend URL: ${config.BACKEND_URL}`);
+console.log(
+  `   MongoDB: ${config.MONGODB_URI ? "✅ Configured" : "❌ Missing"}`
+);
+console.log(
+  `   Cloudinary: ${
+    config.CLOUDINARY.CONFIGURED ? "✅ Configured" : "❌ Missing"
+  }`
+);
+console.log(`   Debug Mode: ${config.DEBUG ? "✅ Enabled" : "❌ Disabled"}`);
+console.log(
+  `   Trust Proxy: ${needsTrustProxy ? "✅ Enabled" : "❌ Disabled"}`
+);
+console.log(`   CORS Origins: ${config.CORS_ORIGINS.length} configured`);
 
 // Connect to MongoDB
-connectDB()
+connectDB();
 
 // 🚦 Rate Limiting - Dynamic configuration
 const limiter = rateLimit({
   windowMs: config.SECURITY.RATE_LIMIT.WINDOW_MS,
-  max: config.IS_PRODUCTION 
+  max: config.IS_PRODUCTION
     ? config.SECURITY.RATE_LIMIT.MAX_REQUESTS_PROD
     : config.SECURITY.RATE_LIMIT.MAX_REQUESTS_DEV,
   message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: Math.ceil(config.SECURITY.RATE_LIMIT.WINDOW_MS / 1000)
+    error: "Too many requests from this IP, please try again later.",
+    retryAfter: Math.ceil(config.SECURITY.RATE_LIMIT.WINDOW_MS / 1000),
   },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting for health checks
-    return req.path === '/health' || req.path === '/api/health'
-  }
-})
+    return req.path === "/health" || req.path === "/api/health";
+  },
+});
 
 // 🛡️ Security Middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
-}))
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy:
+      process.env.NODE_ENV === "production" ? undefined : false,
+  })
+);
 
 // 🌐 CORS Configuration - Universal and adaptive
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = config.CORS_ORIGINS
+    const allowedOrigins = config.CORS_ORIGINS;
 
     // En desarrollo local, ser más permisivo
-    if (config.ENVIRONMENT.type === 'local') {
+    if (config.ENVIRONMENT.type === "local") {
       // Permitir localhost con cualquier puerto
-      if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return callback(null, true)
+      if (
+        !origin ||
+        origin.includes("localhost") ||
+        origin.includes("127.0.0.1")
+      ) {
+        return callback(null, true);
       }
     }
 
     // En Codespaces, permitir cualquier subdominio de github.dev
-    if (config.ENVIRONMENT.type === 'codespaces' || process.env.CODESPACE_NAME) {
-      if (!origin || origin.includes('app.github.dev')) {
-        console.log(`✅ CORS allowed for Codespaces origin: ${origin}`)
-        return callback(null, true)
+    if (
+      config.ENVIRONMENT.type === "codespaces" ||
+      process.env.CODESPACE_NAME
+    ) {
+      if (!origin || origin.includes("app.github.dev")) {
+        console.log(`✅ CORS allowed for Codespaces origin: ${origin}`);
+        return callback(null, true);
       }
     }
 
     // Permitir requests sin origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true)
-    
+    if (!origin) return callback(null, true);
+
     // Verificar si el origin está en la lista permitida
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
+    const isAllowed = allowedOrigins.some((allowedOrigin) => {
       // Coincidencia exacta
-      if (allowedOrigin === origin) return true
-      
+      if (allowedOrigin === origin) return true;
+
       // Si es una expresión regular
       if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin)
+        return allowedOrigin.test(origin);
       }
-      
+
       // Patrón wildcard para Codespaces
-      if (typeof allowedOrigin === 'string' && allowedOrigin.includes('*.app.github.dev')) {
-        return origin && origin.includes('app.github.dev')
+      if (
+        typeof allowedOrigin === "string" &&
+        allowedOrigin.includes("*.app.github.dev")
+      ) {
+        return origin && origin.includes("app.github.dev");
       }
-      
+
       // Permitir subdominios para plataformas cloud
-      if (config.ENVIRONMENT.type !== 'local' && typeof allowedOrigin === 'string') {
-        const allowedDomain = allowedOrigin.replace(/^https?:\/\//, '').split('.').slice(-2).join('.')
-        const originDomain = origin.replace(/^https?:\/\//, '').split('.').slice(-2).join('.')
-        return allowedDomain === originDomain
+      if (
+        config.ENVIRONMENT.type !== "local" &&
+        typeof allowedOrigin === "string"
+      ) {
+        const allowedDomain = allowedOrigin
+          .replace(/^https?:\/\//, "")
+          .split(".")
+          .slice(-2)
+          .join(".");
+        const originDomain = origin
+          .replace(/^https?:\/\//, "")
+          .split(".")
+          .slice(-2)
+          .join(".");
+        return allowedDomain === originDomain;
       }
-      
-      return false
-    })
-    
+
+      return false;
+    });
+
     if (isAllowed) {
-      callback(null, true)
+      callback(null, true);
     } else {
-      console.log(`❌ CORS blocked origin: ${origin}`)
-      console.log(`🌍 Environment: ${config.ENVIRONMENT.type}`)
-      console.log(`✅ Allowed origins:`, allowedOrigins.slice(0, 5), allowedOrigins.length > 5 ? '...' : '')
-      
+      console.log(`❌ CORS blocked origin: ${origin}`);
+      console.log(`🌍 Environment: ${config.ENVIRONMENT.type}`);
+      console.log(
+        `✅ Allowed origins:`,
+        allowedOrigins.slice(0, 5),
+        allowedOrigins.length > 5 ? "..." : ""
+      );
+
       // En desarrollo, mostrar más información
       if (config.DEBUG) {
-        console.log(`🔍 Full allowed origins:`, allowedOrigins)
+        console.log(`🔍 Full allowed origins:`, allowedOrigins);
       }
-      
-      callback(new Error('Not allowed by CORS'))
+
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'X-Forwarded-For',
-    'X-Real-IP'
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "X-Forwarded-For",
+    "X-Real-IP",
   ],
-  exposedHeaders: ['X-Total-Count'],
-  maxAge: 86400 // 24 hours
-}
+  exposedHeaders: ["X-Total-Count"],
+  maxAge: 86400, // 24 hours
+};
 
 // 🔧 Middleware específico para Codespaces
-if (process.env.CODESPACE_NAME || config.ENVIRONMENT.type === 'codespaces') {
+if (process.env.CODESPACE_NAME || config.ENVIRONMENT.type === "codespaces") {
   app.use((req, res, next) => {
-    const origin = req.headers.origin
-    
+    const origin = req.headers.origin;
+
     // Si es un request de Codespaces, agregar headers CORS manualmente
-    if (origin && origin.includes('app.github.dev')) {
-      res.header('Access-Control-Allow-Origin', origin)
-      res.header('Access-Control-Allow-Credentials', 'true')
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS,PATCH')
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin')
-      
-      console.log(`🔧 Codespaces CORS headers added for: ${origin}`)
+    if (origin && origin.includes("app.github.dev")) {
+      res.header("Access-Control-Allow-Origin", origin);
+      res.header("Access-Control-Allow-Credentials", "true");
+      res.header(
+        "Access-Control-Allow-Methods",
+        "GET,PUT,POST,DELETE,OPTIONS,PATCH"
+      );
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+      );
+
+      console.log(`🔧 Codespaces CORS headers added for: ${origin}`);
     }
-    
+
     // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      return res.sendStatus(200)
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
     }
-    
-    next()
-  })
+
+    next();
+  });
 }
 
-app.use(cors(corsOptions))
-app.use(morgan('combined'))
+app.use(cors(corsOptions));
+app.use(morgan("combined"));
 // Aplicar rate limiting solo en producción para ciertos endpoints
-if (process.env.NODE_ENV === 'production') {
-  app.use(limiter)
+if (process.env.NODE_ENV === "production") {
+  app.use(limiter);
 } else {
   // En desarrollo, rate limiting muy permisivo
   const devLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minuto
     max: 10000, // 10000 requests por minuto en desarrollo
-    message: 'Too many requests from this IP, please try again later.'
-  })
-  app.use(devLimiter)
+    message: "Too many requests from this IP, please try again later.",
+  });
+  app.use(devLimiter);
 }
-app.use(express.json({ limit: '10mb' }))
-app.use(express.urlencoded({ extended: true, limit: '10mb' }))
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Serve temporary images in development
-app.use('/temp-images', express.static(path.join(__dirname, 'temp-images')));
+app.use("/temp-images", express.static(path.join(__dirname, "temp-images")));
 
 // Health check
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.status(200).json({
-    status: 'OK',
-    message: 'Monedero Digital API is running',
+    status: "OK",
+    message: "Monedero Digital API is running",
     timestamp: new Date().toISOString(),
     environment: config.NODE_ENV,
-    codespaces: config.IS_CODESPACES
-  })
-})
+    codespaces: config.IS_CODESPACES,
+  });
+});
 
 // Root endpoint
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
-    message: '🚀 Monedero Digital API',
-    version: '2.0.0',
-    status: 'running',
+    message: "🚀 Monedero Digital API",
+    version: "2.0.0",
+    status: "running",
     environment: {
       type: config.ENVIRONMENT.type,
       name: config.ENVIRONMENT.name,
-      node_env: config.NODE_ENV
+      node_env: config.NODE_ENV,
     },
     urls: {
       backend: config.BACKEND_URL,
-      frontend: config.FRONTEND_URL
+      frontend: config.FRONTEND_URL,
     },
     endpoints: {
-      health: '/health',
-      api: '/api',
-      auth: '/api/auth',
-      upload: '/api/upload'
+      health: "/health",
+      api: "/api",
+      auth: "/api/auth",
+      upload: "/api/upload",
     },
     cors: {
       origins_count: config.CORS_ORIGINS.length,
-      trust_proxy: needsTrustProxy
-    }
-  })
-})
+      trust_proxy: needsTrustProxy,
+    },
+  });
+});
+
+// Endpoint para que el frontend obtenga la configuración
+app.get("/config", (req, res) => {
+  res.json({
+    backendUrl: config.BACKEND_URL,
+    apiUrl: `${config.BACKEND_URL}/api`,
+    environment: config.ENVIRONMENT.type,
+  });
+});
 
 // API Routes
-app.use('/api/auth', authRoutes)
-app.use('/api/users', userRoutes)
-app.use('/api/transactions', transactionRoutes)
-app.use('/api/products', productRoutes)
-app.use('/api/limits', limitsRoutes)
-app.use('/api/limites', limitesNuevos)
-app.use('/api/limites-simples', limitesSimples)
-app.use('/api/transacciones-simples', transaccionesSimples)
-app.use('/api/upload-simple', uploadSimple)
-app.use('/api/comercio', comercioRoutes)
-app.use('/api/upload', uploadRoutes)
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/limits", limitsRoutes);
+app.use("/api/limites", limitesNuevos);
+app.use("/api/limites-simples", limitesSimples);
+app.use("/api/transacciones-simples", transaccionesSimples);
+app.use("/api/upload-simple", uploadSimple);
+app.use("/api/comercio", comercioRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Server is running',
+    message: "Server is running",
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
-  })
-})
+    environment: process.env.NODE_ENV || "development",
+  });
+});
 
 // 404 handler
-app.use('*', (req, res) => {
-  console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`)
+app.use("*", (req, res) => {
+  console.log(`❌ Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`
-  })
-})
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err)
-  
+  console.error("Error:", err);
+
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  })
-})
+    message: err.message || "Internal server error",
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+  });
+});
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`)
-  console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`)
-})
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📱 Environment: ${process.env.NODE_ENV || "development"}`);
+  console.log(
+    `🌐 Frontend URL: ${process.env.FRONTEND_URL || "http://localhost:3000"}`
+  );
+});
