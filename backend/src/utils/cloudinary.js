@@ -1,15 +1,17 @@
 const cloudinary = require('cloudinary').v2;
 
+const config = require('../config');
+
 // Configurar Cloudinary
 console.log('🔧 Configurando Cloudinary...');
-console.log('📋 CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing');
-console.log('📋 CLOUDINARY_API_KEY:', process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing');
-console.log('📋 CLOUDINARY_API_SECRET:', process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Missing');
+console.log('📋 CLOUDINARY_CLOUD_NAME:', config.CLOUDINARY.CLOUD_NAME ? 'Set' : 'Missing');
+console.log('📋 CLOUDINARY_API_KEY:', config.CLOUDINARY.API_KEY ? 'Set' : 'Missing');
+console.log('📋 CLOUDINARY_API_SECRET:', config.CLOUDINARY.API_SECRET ? 'Set' : 'Missing');
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: config.CLOUDINARY.CLOUD_NAME,
+  api_key: config.CLOUDINARY.API_KEY,
+  api_secret: config.CLOUDINARY.API_SECRET,
   secure: true,
   timeout: 60000 // 60 segundos timeout para Cloudinary
 });
@@ -132,11 +134,7 @@ const getThumbnail = (publicId, width = 200, height = 200) => {
 
 // Función para verificar si Cloudinary está configurado
 const isConfigured = () => {
-  return !!(
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
-  );
+  return config.CLOUDINARY.CONFIGURED;
 };
 
 // Función para obtener información de una imagen

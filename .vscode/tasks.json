@@ -1,0 +1,49 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Instalar Dependencias - Backend",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/backend && npm install",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Instalar Dependencias - Frontend",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/frontend && npm install",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Instalar Dependencias - Contracts",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/contracts && npm install",
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Servidor Backend",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/backend && npm run dev",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Servidor Frontend",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/frontend && npm run dev",
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Compilar Smart Contracts",
+			"type": "shell",
+			"command": "cd ${workspaceFolder}/contracts && npx hardhat compile",
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

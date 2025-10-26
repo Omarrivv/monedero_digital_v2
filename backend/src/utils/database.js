@@ -1,9 +1,10 @@
 const mongoose = require('mongoose');
+const config = require('../config');
 
 const connectDB = async () => {
   try {
     console.log('🔗 Intentando conectar a MongoDB Atlas...');
-    console.log('📍 URI:', process.env.MONGODB_URI ? 'Configurada' : 'No configurada');
+    console.log('📍 URI:', config.MONGODB_URI ? 'Configurada' : 'No configurada');
 
     // Configuración de conexión compatible con MongoDB Driver v6+
     const options = {
@@ -15,7 +16,7 @@ const connectDB = async () => {
       // Removidas opciones no compatibles: bufferCommands, bufferMaxEntries, retryWrites, w
     };
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI, options);
+    const conn = await mongoose.connect(config.MONGODB_URI, options);
     
     console.log(`✅ MongoDB Atlas conectado exitosamente`);
     console.log(`📊 Host: ${conn.connection.host}`);
@@ -68,7 +69,7 @@ const connectDB = async () => {
     }
 
     // En desarrollo, no salir del proceso para permitir debugging
-    if (process.env.NODE_ENV === 'development') {
+    if (config.IS_DEVELOPMENT) {
       console.log('⚠️ Modo desarrollo: continuando sin MongoDB...');
       return null;
     } else {
