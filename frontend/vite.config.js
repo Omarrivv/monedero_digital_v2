@@ -9,7 +9,7 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'https://sinister-spooky-orb-qrwpq59q5v7fx9jx-5000.app.github.dev',
+        target: 'https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev',
         changeOrigin: true,
         secure: true
       }
