@@ -1,9 +1,12 @@
 import axios from "axios";
 
 // � SIN  CORS - USA PROXY AUTOMÁTICO
+const API_BASE_URL = "https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev/api";
+
+console.log("🔧 API Service configurado con URL:", API_BASE_URL);
+
 const apiService = axios.create({
-  baseURL:
-    "https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev/api", // URL directa temporalmente
+  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -13,6 +16,11 @@ const apiService = axios.create({
 // Interceptor para requests
 apiService.interceptors.request.use(
   (config) => {
+    // Log de la URL completa que se va a llamar
+    const fullUrl = config.baseURL + config.url;
+    console.log("🚀 Haciendo petición a:", fullUrl);
+    console.log("🔧 Config:", { baseURL: config.baseURL, url: config.url });
+
     // Agregar token si existe
     const token = localStorage.getItem("authToken");
     if (token) {

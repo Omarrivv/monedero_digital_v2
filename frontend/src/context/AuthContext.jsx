@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useWeb3 } from './Web3Context'
 import apiService from '../services/apiService'
-import { authAPI } from '../services/apiService'
+import { authAPI } from '../services/apiService-new'
 import toast from 'react-hot-toast'
 
 const AuthContext = createContext()

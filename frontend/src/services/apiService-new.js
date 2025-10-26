@@ -1,0 +1,135 @@
+import axios from 'axios'
+
+// 🔥 CONFIGURACIÓN LIMPIA Y DIRECTA
+const API_BASE_URL = "https://dark-spooky-haunting-7qgp9jr9x56cx4v4-5000.app.github.dev/api"
+
+console.log('🔧 API Service NEW configurado con URL:', API_BASE_URL)
+
+const apiService = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+})
+
+// Interceptor con logs detallados
+apiService.interceptors.request.use(
+  (config) => {
+    const fullUrl = `${config.baseURL}${config.url}`
+    console.log('🚀 NUEVA PETICIÓN A:', fullUrl)
+    
+    const token = localStorage.getItem('authToken')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    console.error('❌ Error en request:', error)
+    return Promise.reject(error)
+  }
+)
+
+apiService.interceptors.response.use(
+  (response) => {
+    console.log('✅ Respuesta exitosa de:', response.config.url)
+    return response
+  },
+  (error) => {
+    console.error('❌ Error en respuesta:', error.response?.status, error.config?.url)
+    if (error.response?.status === 401) {
+      localStorage.removeItem('authToken')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+// API methods
+export const authAPI = {
+  checkUser: (walletAddress) => {
+    console.log('🔍 Checking user:', walletAddress)
+    return apiService.get(`/auth/check/${walletAddress}`)
+  },
+  
+  registerPadre: (userData) => 
+    apiService.post('/auth/register/padre', userData, { timeout: 60000 }),
+  
+  registerHijo: (hijoData) => 
+    apiService.post('/auth/register/hijo', hijoData),
+  
+  registerComercio: (comercioData) => 
+    apiService.post('/auth/register/comercio', comercioData),
+  
+  loginHijo: (credentials) => 
+    apiService.post('/auth/login/hijo', credentials),
+  
+  updateProfile: (profileData) => 
+    apiService.put('/auth/profile', profileData),
+}
+
+export const transactionAPI = {
+  getHistory: (walletAddress) => 
+    apiService.get(`/transactions/history/${walletAddress}`),
+  
+  recordTransaction: (transactionData) => 
+    apiService.post('/transactions/record', transactionData),
+  
+  getPendingTransactions: (walletAddress) => 
+    apiService.get(`/transactions/pending/${walletAddress}`),
+}
+
+export const limitsAPI = {
+  setLimits: (limitsData) => 
+    apiService.post('/limits/set', limitsData),
+  
+  getLimits: (hijoId) => 
+    apiService.get(`/limits/${hijoId}`),
+  
+  updateLimits: (hijoId, limitsData) => 
+    apiService.put(`/limits/${hijoId}`, limitsData),
+  
+  checkSpendingLimit: (hijoId, amount, category) => 
+    apiService.post('/limits/check', { hijoId, amount, category }),
+}
+
+export const comercioAPI = {
+  getProducts: (comercioId) => 
+    apiService.get(`/comercio/products/${comercioId}`),
+  
+  addProduct: (productData) => 
+    apiService.post('/comercio/products', productData),
+  
+  updateProduct: (productId, productData) => 
+    apiService.put(`/comercio/products/${productId}`, productData),
+  
+  deleteProduct: (productId) => 
+    apiService.delete(`/comercio/products/${productId}`),
+  
+  getSales: (comercioId) => 
+    apiService.get(`/comercio/sales/${comercioId}`),
+}
+
+export const uploadAPI = {
+  uploadImage: (formData) => 
+    apiService.post('/upload/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000,
+    }),
+  
+  uploadImageForRegister: (formData) => 
+    apiService.post('/upload/register-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000,
+    }),
+  
+  deleteImage: (imageId) => 
+    apiService.delete(`/upload/image/${imageId}`),
+}
+
+export default apiService
