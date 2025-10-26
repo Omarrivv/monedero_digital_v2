@@ -43,8 +43,10 @@ export function AuthProvider({ children }) {
     setIsLoading(true)
 
     try {
+      console.log('🔍 Making auth check request to:', `/auth/check/${account}`)
+      console.log('🔍 API Base URL:', apiService.defaults.baseURL)
       const response = await apiService.get(`/auth/check/${account}`)
-      console.log('Auth check response:', response.data)
+      console.log('✅ Auth check response:', response.data)
       
       if (response.data.exists) {
         const userData = response.data.user
