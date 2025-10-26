@@ -8,7 +8,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
 
 // 📋 Import centralized configuration
 const config = require('./src/config');
