@@ -29,16 +29,29 @@ const uploadRoutes = require('./src/routes/uploadRoutes');
 const app = express()
 const PORT = config.PORT
 
+// 🔧 Configure trust proxy for cloud environments
+const needsTrustProxy = [
+  'codespaces', 'render', 'railway', 'heroku', 'vercel', 'netlify', 'production'
+].includes(config.ENVIRONMENT.type)
+
+if (needsTrustProxy) {
+  app.set('trust proxy', 1)
+  console.log(`🔧 Trust proxy enabled for ${config.ENVIRONMENT.type} environment`)
+}
+
 // 📊 Log configuration on startup
 console.log('🚀 Starting Monedero Digital Backend...')
 console.log('📋 Configuration:')
 console.log(`   Environment: ${config.NODE_ENV}`)
+console.log(`   Platform: ${config.ENVIRONMENT.type} (${config.ENVIRONMENT.name})`)
 console.log(`   Port: ${PORT}`)
 console.log(`   Frontend URL: ${config.FRONTEND_URL}`)
 console.log(`   Backend URL: ${config.BACKEND_URL}`)
 console.log(`   MongoDB: ${config.MONGODB_URI ? '✅ Configured' : '❌ Missing'}`)
 console.log(`   Cloudinary: ${config.CLOUDINARY.CONFIGURED ? '✅ Configured' : '❌ Missing'}`)
 console.log(`   Debug Mode: ${config.DEBUG ? '✅ Enabled' : '❌ Disabled'}`)
+console.log(`   Trust Proxy: ${needsTrustProxy ? '✅ Enabled' : '❌ Disabled'}`)
+console.log(`   CORS Origins: ${config.CORS_ORIGINS.length} configured`)
 
 // Connect to MongoDB
 connectDB()
@@ -67,15 +80,22 @@ app.use(helmet({
   contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false
 }))
 
-// 🌐 CORS Configuration - Dynamic for development and production
+// 🌐 CORS Configuration - Universal and adaptive
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = config.CORS_ORIGINS
 
-    // En desarrollo, ser más permisivo
-    if (config.IS_DEVELOPMENT) {
+    // En desarrollo local, ser más permisivo
+    if (config.ENVIRONMENT.type === 'local') {
       // Permitir localhost con cualquier puerto
       if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true)
+      }
+    }
+
+    // En Codespaces, permitir cualquier subdominio de github.dev
+    if (config.ENVIRONMENT.type === 'codespaces') {
+      if (!origin || origin.includes('app.github.dev')) {
         return callback(null, true)
       }
     }
@@ -83,11 +103,32 @@ const corsOptions = {
     // Permitir requests sin origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true)
     
-    if (allowedOrigins.includes(origin)) {
+    // Verificar si el origin está en la lista permitida
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (allowedOrigin === origin) return true
+      
+      // Permitir subdominios para plataformas cloud
+      if (config.ENVIRONMENT.type !== 'local') {
+        const allowedDomain = allowedOrigin.replace(/^https?:\/\//, '').split('.').slice(-2).join('.')
+        const originDomain = origin.replace(/^https?:\/\//, '').split('.').slice(-2).join('.')
+        return allowedDomain === originDomain
+      }
+      
+      return false
+    })
+    
+    if (isAllowed) {
       callback(null, true)
     } else {
       console.log(`❌ CORS blocked origin: ${origin}`)
-      console.log(`✅ Allowed origins:`, allowedOrigins)
+      console.log(`🌍 Environment: ${config.ENVIRONMENT.type}`)
+      console.log(`✅ Allowed origins:`, allowedOrigins.slice(0, 5), allowedOrigins.length > 5 ? '...' : '')
+      
+      // En desarrollo, mostrar más información
+      if (config.DEBUG) {
+        console.log(`🔍 Full allowed origins:`, allowedOrigins)
+      }
+      
       callback(new Error('Not allowed by CORS'))
     }
   },
@@ -98,7 +139,9 @@ const corsOptions = {
     'Authorization', 
     'X-Requested-With',
     'Accept',
-    'Origin'
+    'Origin',
+    'X-Forwarded-For',
+    'X-Real-IP'
   ],
   exposedHeaders: ['X-Total-Count'],
   maxAge: 86400 // 24 hours
@@ -129,7 +172,37 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     message: 'Monedero Digital API is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: config.NODE_ENV,
+    codespaces: config.IS_CODESPACES
+  })
+})
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: '🚀 Monedero Digital API',
+    version: '2.0.0',
+    status: 'running',
+    environment: {
+      type: config.ENVIRONMENT.type,
+      name: config.ENVIRONMENT.name,
+      node_env: config.NODE_ENV
+    },
+    urls: {
+      backend: config.BACKEND_URL,
+      frontend: config.FRONTEND_URL
+    },
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      auth: '/api/auth',
+      upload: '/api/upload'
+    },
+    cors: {
+      origins_count: config.CORS_ORIGINS.length,
+      trust_proxy: needsTrustProxy
+    }
   })
 })
 

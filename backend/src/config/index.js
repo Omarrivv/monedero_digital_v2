@@ -1,15 +1,99 @@
 // 🔧 CONFIGURACIÓN CENTRALIZADA
 // Este archivo centraliza todas las configuraciones del proyecto
 
+// 🔍 Auto-detect environment
+const detectEnvironment = () => {
+  // Codespaces
+  if (process.env.CODESPACE_NAME) {
+    return {
+      type: 'codespaces',
+      name: process.env.CODESPACE_NAME,
+      backendUrl: `https://${process.env.CODESPACE_NAME}-5000.app.github.dev`,
+      frontendUrl: `https://${process.env.CODESPACE_NAME}-3000.app.github.dev`
+    }
+  }
+  
+  // Render
+  if (process.env.RENDER_SERVICE_NAME || process.env.RENDER) {
+    return {
+      type: 'render',
+      name: process.env.RENDER_SERVICE_NAME,
+      backendUrl: process.env.RENDER_EXTERNAL_URL || `https://${process.env.RENDER_SERVICE_NAME}.onrender.com`,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+    }
+  }
+  
+  // Railway
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_NAME) {
+    return {
+      type: 'railway',
+      name: process.env.RAILWAY_PROJECT_NAME,
+      backendUrl: process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : `http://localhost:${process.env.PORT || 5000}`,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+    }
+  }
+  
+  // Heroku
+  if (process.env.DYNO || process.env.HEROKU_APP_NAME) {
+    return {
+      type: 'heroku',
+      name: process.env.HEROKU_APP_NAME,
+      backendUrl: `https://${process.env.HEROKU_APP_NAME}.herokuapp.com`,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+    }
+  }
+  
+  // Vercel (usually frontend only, but could be used for API)
+  if (process.env.VERCEL || process.env.VERCEL_URL) {
+    return {
+      type: 'vercel',
+      name: process.env.VERCEL_PROJECT_NAME,
+      backendUrl: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${process.env.PORT || 5000}`,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+    }
+  }
+  
+  // Netlify
+  if (process.env.NETLIFY || process.env.DEPLOY_URL) {
+    return {
+      type: 'netlify',
+      name: process.env.SITE_NAME,
+      backendUrl: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`,
+      frontendUrl: process.env.DEPLOY_URL || process.env.URL || 'http://localhost:3000'
+    }
+  }
+  
+  // Production (generic cloud)
+  if (process.env.NODE_ENV === 'production') {
+    return {
+      type: 'production',
+      name: 'cloud',
+      backendUrl: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`,
+      frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+    }
+  }
+  
+  // Local development
+  return {
+    type: 'local',
+    name: 'localhost',
+    backendUrl: `http://localhost:${process.env.PORT || 5000}`,
+    frontendUrl: 'http://localhost:3000'
+  }
+}
+
+const environment = detectEnvironment()
+
 const config = {
   // 🌍 Environment
   NODE_ENV: process.env.NODE_ENV || 'development',
   DEBUG: process.env.DEBUG === 'true',
+  ENVIRONMENT: environment,
   
   // 🖥️ Server
   PORT: parseInt(process.env.PORT) || 5000,
-  BACKEND_URL: process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`,
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+  BACKEND_URL: process.env.BACKEND_URL || environment.backendUrl,
+  FRONTEND_URL: process.env.FRONTEND_URL || environment.frontendUrl,
   
   // 🗄️ Database
   MONGODB_URI: process.env.MONGODB_URI,
@@ -45,14 +129,60 @@ const config = {
     }
   },
   
-  // 🌐 CORS Origins
-  CORS_ORIGINS: [
-    process.env.FRONTEND_URL,
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173'
-  ].filter(Boolean), // Remove undefined values
+  // 🌐 CORS Origins - Dynamic based on environment
+  CORS_ORIGINS: (() => {
+    const origins = [
+      // Explicit environment variables
+      process.env.FRONTEND_URL,
+      
+      // Local development
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      
+      // Auto-detected environment URLs
+      environment.frontendUrl
+    ]
+    
+    // Add environment-specific origins
+    switch (environment.type) {
+      case 'codespaces':
+        origins.push(
+          `https://${environment.name}-3000.app.github.dev`,
+          `https://${environment.name}-5173.app.github.dev`
+        )
+        break
+      case 'render':
+        // Render apps usually have predictable URLs
+        if (environment.name) {
+          origins.push(`https://${environment.name}.onrender.com`)
+        }
+        break
+      case 'railway':
+        // Railway generates random domains, rely on FRONTEND_URL
+        break
+      case 'heroku':
+        if (environment.name) {
+          origins.push(`https://${environment.name}.herokuapp.com`)
+        }
+        break
+      case 'vercel':
+        // Vercel has multiple possible URLs
+        origins.push(
+          `https://${environment.name}.vercel.app`,
+          `https://${environment.name}-git-main.vercel.app`
+        )
+        break
+      case 'netlify':
+        if (environment.name) {
+          origins.push(`https://${environment.name}.netlify.app`)
+        }
+        break
+    }
+    
+    return origins.filter(Boolean) // Remove undefined values
+  })(),
   
   // 📧 Email (opcional)
   EMAIL: {
