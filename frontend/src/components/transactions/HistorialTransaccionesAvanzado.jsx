@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import paymentService from '../../services/paymentService'
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+import API_CONFIG from '../../config/apiConfig.js'
 import { 
   Calendar,
   Filter,
@@ -20,6 +20,9 @@ import {
   User
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+// 🚀 USAR CONFIGURACIÓN CENTRALIZADA
+const API_BASE = API_CONFIG.BASE_URL
 
 function HistorialTransaccionesAvanzado({ userRole, userId, redFiltro, redesDisponibles }) {
   const [transacciones, setTransacciones] = useState([])

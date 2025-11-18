@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Target, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import API_CONFIG from '../../config/apiConfig.js'
+
+// 🚀 USAR CONFIGURACIÓN CENTRALIZADA
+const API_BASE = API_CONFIG.BASE_URL
+
+// 🔧 FUNCIÓN HELPER PARA FECHAS: Evita problemas de zona horaria
+const crearFechaLocal = (fechaString) => {
+  const [year, month, day] = fechaString.split('-')
+  return new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+}
 
 function LimitesSimples({ hijoId, nombreHijo }) {
   const [limites, setLimites] = useState([])
@@ -29,7 +39,7 @@ function LimitesSimples({ hijoId, nombreHijo }) {
         return
       }
 
-      const url = `${import.meta.env.VITE_API_URL}/limites-simples/hijo/${hijoId}`
+      const url = `${API_BASE}/limites-simples/hijo/${hijoId}`
       console.log('📡 URL:', url)
 
       const response = await fetch(url, {
@@ -81,7 +91,7 @@ function LimitesSimples({ hijoId, nombreHijo }) {
 
       console.log('📤 Creando límite:', limitData)
 
-      const url = `${import.meta.env.VITE_API_URL}/limites-simples/crear/${hijoId}`
+      const url = `${API_BASE}/limites-simples/crear/${hijoId}`
       console.log('📡 URL:', url)
 
       const response = await fetch(url, {
@@ -121,7 +131,7 @@ function LimitesSimples({ hijoId, nombreHijo }) {
 
     try {
       const token = localStorage.getItem('authToken')
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/limites-simples/eliminar/${limiteId}`, {
+      const response = await fetch(`${API_BASE}/limites-simples/eliminar/${limiteId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -250,7 +260,7 @@ function LimitesSimples({ hijoId, nombreHijo }) {
               <div key={limite._id} className="p-4 flex items-center justify-between">
                 <div>
                   <div className="font-medium">
-                    {new Date(limite.fecha).toLocaleDateString('es-ES', {
+                    {crearFechaLocal(limite.fecha).toLocaleDateString('es-ES', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',

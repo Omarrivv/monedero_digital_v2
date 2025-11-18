@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { useWeb3 } from '../context/Web3Context'
 import apiService from '../services/apiService'
+import API_CONFIG from '../config/apiConfig'
 import CalendarioLimites from '../components/calendar/CalendarioLimites'
 import HistorialTransaccionesAvanzado from '../components/transactions/HistorialTransaccionesAvanzado'
 import LimitesSimples from '../components/limits/LimitesSimples'
@@ -10,6 +11,15 @@ import DashboardAnalytics from '../components/analytics/DashboardAnalytics'
 import ProfileEdit from '../components/ProfileEdit'
 
 import ProfileView from '../components/ProfileView'
+
+// 🚀 CONFIGURACIÓN DE EXPLORERS DESDE .ENV
+const BLOCKCHAIN_EXPLORERS = {
+  '1': import.meta.env.VITE_ETHEREUM_EXPLORER || 'https://etherscan.io',
+  '11155111': import.meta.env.VITE_SEPOLIA_EXPLORER || 'https://sepolia.etherscan.io', 
+  '17000': import.meta.env.VITE_HOLESKY_EXPLORER || 'https://holesky.etherscan.io',
+  '560048': import.meta.env.VITE_HOODI_EXPLORER || 'https://hoodi.etherscan.io'
+}
+
 import { 
   Users, 
   Plus, 
@@ -148,7 +158,7 @@ function PadreDashboard() {
     
     if (!cleanHash) {
       console.log('❌ Hash vacío o inválido')
-      return `https://sepolia.etherscan.io/tx/${cleanHash}`
+      return `${BLOCKCHAIN_EXPLORERS['11155111']}/tx/${cleanHash}`
     }
 
     // Determinar la red basada en chainId
@@ -163,23 +173,17 @@ function PadreDashboard() {
     
     console.log('🔢 Chain ID detectado:', chainId)
     
-    switch (chainId) {
-      case '1': // Ethereum Mainnet
-        console.log('🌐 Usando Ethereum Mainnet explorer')
-        return `https://etherscan.io/tx/${cleanHash}`
-      case '11155111': // Sepolia
-        console.log('🌐 Usando Sepolia explorer')
-        return `https://sepolia.etherscan.io/tx/${cleanHash}`
-      case '17000': // Holesky
-        console.log('🌐 Usando Holesky explorer')
-        return `https://holesky.etherscan.io/tx/${cleanHash}`
-      case '560048': // Hoodi
-        console.log('🌐 Usando Hoodi explorer')
-        return `https://hoodi.etherscan.io/tx/${cleanHash}`
-      default:
-        console.log('🌐 Red no reconocida, usando Sepolia por defecto')
-        return `https://sepolia.etherscan.io/tx/${cleanHash}`
+    // 🚀 USAR CONFIGURACIÓN CENTRALIZADA DE EXPLORERS
+    const explorerBaseUrl = BLOCKCHAIN_EXPLORERS[chainId]
+    
+    if (explorerBaseUrl) {
+      console.log(`🌐 Usando explorer para chain ${chainId}:`, explorerBaseUrl)
+      return `${explorerBaseUrl}/tx/${cleanHash}`
     }
+    
+    // Fallback por defecto (Sepolia)
+    console.log('🌐 Red no reconocida, usando Sepolia por defecto')
+    return `${BLOCKCHAIN_EXPLORERS['11155111']}/tx/${cleanHash}`
   }
 
   // Cargar hijos cuando el componente se monta
@@ -190,44 +194,55 @@ function PadreDashboard() {
     }
   }, [user]) // Solo depender de user, no de loadChildren
 
-  // Función para obtener el límite diario actual de un hijo
+  // Estados para límites
+  const [limitesHijos, setLimitesHijos] = useState({})
+
+  // Función para cargar límite de un hijo específico
+  const cargarLimiteHijo = async (hijoId) => {
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) return
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/limites-simples/hijo/${hijoId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          ...API_CONFIG.HEADERS
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const hoy = new Date().toISOString().split('T')[0]
+        
+        // Buscar límite para hoy
+        const limiteHoy = data.limites?.find(limite => {
+          const fechaLimite = new Date(limite.fecha).toISOString().split('T')[0]
+          return fechaLimite === hoy
+        })
+        
+        const montoLimite = limiteHoy?.monto || 0
+        
+        setLimitesHijos(prev => ({
+          ...prev,
+          [hijoId]: montoLimite
+        }))
+      }
+    } catch (error) {
+      console.error('Error cargando límite:', error)
+    }
+  }
+
+  // Cargar límites cuando cambien los hijos
+  useEffect(() => {
+    if (children?.length > 0) {
+      children.forEach(hijo => {
+        cargarLimiteHijo(hijo._id)
+      })
+    }
+  }, [children])
+
   const getLimiteDiarioActual = (hijo) => {
-    console.log('🔍 Verificando límites para hijo:', hijo.name)
-    console.log('📊 spendingLimits:', hijo.spendingLimits)
-    
-    if (!hijo.spendingLimits) {
-      console.log('❌ No hay spendingLimits')
-      return 0
-    }
-    
-    // Verificar si está en formato antiguo (con campo 'fecha')
-    if (hijo.spendingLimits.fecha) {
-      console.log('📅 Formato antiguo detectado, límite:', hijo.spendingLimits.limite)
-      return hijo.spendingLimits.limite || 0
-    }
-    
-    // Obtener la fecha de hoy en formato YYYY-MM-DD
-    const hoy = new Date().toISOString().split('T')[0]
-    console.log('📅 Fecha de hoy:', hoy)
-    
-    // Si hay límite para hoy, devolverlo
-    if (hijo.spendingLimits[hoy]) {
-      console.log('✅ Límite para hoy:', hijo.spendingLimits[hoy].limite)
-      return hijo.spendingLimits[hoy].limite || 0
-    }
-    
-    // Si no hay límite específico para hoy, buscar el más reciente
-    const fechasConLimite = Object.keys(hijo.spendingLimits).sort().reverse()
-    console.log('📋 Fechas con límite:', fechasConLimite)
-    
-    if (fechasConLimite.length > 0) {
-      const ultimoLimite = hijo.spendingLimits[fechasConLimite[0]]
-      console.log('🔄 Usando último límite:', ultimoLimite?.limite)
-      return ultimoLimite?.limite || 0
-    }
-    
-    console.log('❌ No hay límites configurados')
-    return 0
+    return limitesHijos[hijo._id] || 0
   }
 
   const vistas = [
@@ -374,16 +389,19 @@ function PadreDashboard() {
       // Manejar diferentes tipos de errores
       if (error.response?.status === 403) {
         toast.error(error.response.data.message || 'No tienes permisos para esta transferencia')
-      } else if (error.code === 'ACTION_REJECTED') {
-        toast.error('Transacción rechazada en MetaMask')
+      } else if (error.code === 'ACTION_REJECTED' || 
+                 error.code === 4001 || 
+                 error.message?.includes('user rejected') ||
+                 error.message?.includes('User denied transaction signature')) {
+        toast.error('Transacción cancelada. Puedes intentar la transferencia nuevamente cuando estés listo.', { duration: 4000 })
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
         toast.error('Fondos insuficientes en tu wallet')
       } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('network changed')) {
         toast.error('Error de red durante la transacción. Verifica que no hayas cambiado de red durante el proceso.')
-      } else if (error.message?.includes('network changed')) {
-        toast.warning('La red cambió durante la transacción. La transacción puede estar pendiente. Verifica en el explorer.')
+      } else if (error.message?.includes('gas')) {
+        toast.error('Error de gas. Intenta aumentar el límite de gas.')
       } else {
-        toast.error('Error en la transferencia. Revisa la consola para más detalles.')
+        toast.error(`Error en la transferencia: ${error.message || 'Error desconocido'}`)
       }
       
       toast.dismiss('transfer-loading')

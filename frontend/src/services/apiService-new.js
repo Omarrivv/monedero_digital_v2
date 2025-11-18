@@ -1,28 +1,34 @@
 import axios from 'axios'
+import API_CONFIG from '../config/apiConfig.js'
 
-// 🔥 CONFIGURACIÓN LIMPIA Y DIRECTA
-const API_BASE_URL = "https://poisonous-toad-r47w9qgrjp5c55p7-5000.app.github.dev/api"
-
-console.log('🔧 API Service NEW configurado con URL:', API_BASE_URL)
+// 🔥 CONFIGURACIÓN AUTOMÁTICA
+console.log('🔧 API Service configurado con:', API_CONFIG)
 
 const apiService = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  baseURL: API_CONFIG.BASE_URL,
+  timeout: API_CONFIG.TIMEOUT,
+  headers: API_CONFIG.HEADERS,
+  // Configuración adicional para CORS
+  withCredentials: false, // Solo true si el backend espera cookies
+  validateStatus: function (status) {
+    return status >= 200 && status < 300; // default
+  },
 })
 
-// Interceptor con logs detallados
+// 📡 Interceptors con logs detallados
 apiService.interceptors.request.use(
   (config) => {
     const fullUrl = `${config.baseURL}${config.url}`
     console.log('🚀 NUEVA PETICIÓN A:', fullUrl)
+    console.log('📋 Method:', config.method?.toUpperCase())
+    console.log('🌐 Environment:', API_CONFIG.ENVIRONMENT.type)
     
+    // Agregar token si existe
     const token = localStorage.getItem('authToken')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
     return config
   },
   (error) => {
@@ -34,10 +40,24 @@ apiService.interceptors.request.use(
 apiService.interceptors.response.use(
   (response) => {
     console.log('✅ Respuesta exitosa de:', response.config.url)
+    console.log('📊 Status:', response.status)
     return response
   },
   (error) => {
     console.error('❌ Error en respuesta:', error.response?.status, error.config?.url)
+    console.error('🔍 Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+      status: error.response?.status
+    })
+    
+    // Manejo específico de errores CORS
+    if (error.code === 'ERR_NETWORK') {
+      console.error('🚫 Error de RED - Posible problema de CORS o servidor no disponible')
+      console.error('🌐 Current environment:', API_CONFIG.ENVIRONMENT)
+    }
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken')
       window.location.href = '/login'

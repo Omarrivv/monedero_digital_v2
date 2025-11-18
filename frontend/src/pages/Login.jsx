@@ -4,6 +4,7 @@ import { useWeb3 } from "../context/Web3Context";
 import { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import API_CONFIG from '../config/apiConfig.js';
 import {
   LogIn,
   Wallet,
@@ -41,7 +42,9 @@ function Login() {
 
   const { account, connectWallet, isConnecting } = useWeb3();
   const { checkUserAuthentication, loginHijo, user, userRole, isLoading: authLoading } = useAuth();
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+  
+  // 🚀 USAR CONFIGURACIÓN CENTRALIZADA
+  const API_BASE = API_CONFIG.BASE_URL;
 
   // Redirigir automáticamente cuando el usuario se autentica
   useEffect(() => {

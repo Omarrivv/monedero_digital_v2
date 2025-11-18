@@ -12,15 +12,13 @@ const connectDB = require('./src/utils/database');
 // Import routes
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
-const transactionRoutes = require('./src/routes/transactionRoutes');
 const productRoutes = require('./src/routes/productRoutes');
-const limitsRoutes = require('./src/routes/limitsRoutes');
 const limitesNuevos = require('./src/routes/limitesNuevos');
 const limitesSimples = require('./src/routes/limitesSimples');
 const transaccionesSimples = require('./src/routes/transaccionesSimples');
 const uploadSimple = require('./src/routes/uploadSimple');
 const comercioRoutes = require('./src/routes/comercioRoutes');
-const uploadRoutes = require('./src/routes/uploadRoutes');
+const analyticsRoutes = require('./src/routes/analyticsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -73,15 +71,13 @@ app.get('/config', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/transactions', transactionRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/limits', limitsRoutes);
 app.use('/api/limites', limitesNuevos);
 app.use('/api/limites-simples', limitesSimples);
 app.use('/api/transacciones-simples', transaccionesSimples);
 app.use('/api/upload-simple', uploadSimple);
 app.use('/api/comercio', comercioRoutes);
-app.use('/api/upload', uploadRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

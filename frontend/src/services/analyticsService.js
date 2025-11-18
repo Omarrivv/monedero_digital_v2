@@ -1,8 +1,11 @@
 import apiService from './apiService'
 import { debugAuth } from '../utils/debugAuth'
+import API_CONFIG from '../config/apiConfig.js'
 
-// Fallback cuando VITE_API_URL no está definido en el entorno de Vite
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+// 🚀 USAR CONFIGURACIÓN CENTRALIZADA - NO MÁS URLs HARDCODEADAS
+const API_URL = `${API_CONFIG.BASE_URL}` // Esto ya incluye /api
+
+console.log('📊 Analytics Service configurado con URL:', API_URL)
 
 class AnalyticsService {
   // Obtener analytics generales del usuario
@@ -48,10 +51,10 @@ class AnalyticsService {
       }
 
       console.log('🔑 Token encontrado:', token.substring(0, 20) + '...')
-      console.log('📡 Haciendo petición a:', `${API_URL}/transactions/my-transactions?limit=1000`)
+      console.log('📡 Haciendo petición a:', `${API_URL}/transacciones-simples/mis-transacciones?limit=1000`)
 
       // Obtener todas las transacciones del usuario
-      const response = await fetch(`${API_URL}/transactions/my-transactions?limit=1000`, {
+      const response = await fetch(`${API_URL}/transacciones-simples/mis-transacciones?limit=1000`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -4,34 +4,35 @@ import toast from 'react-hot-toast'
 
 const Web3Context = createContext()
 
+// 🚀 USAR VARIABLES DE ENTORNO PARA BLOCKCHAIN URLs
 const SUPPORTED_NETWORKS = {
   ethereum: {
     chainId: '0x1',
     chainName: 'Ethereum Mainnet',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://mainnet.infura.io/v3/'],
-    blockExplorerUrls: ['https://etherscan.io']
+    rpcUrls: [import.meta.env.VITE_ETHEREUM_RPC_URL || 'https://mainnet.infura.io/v3/'],
+    blockExplorerUrls: [import.meta.env.VITE_ETHEREUM_EXPLORER || 'https://etherscan.io']
   },
   sepolia: {
     chainId: '0xaa36a7',
     chainName: 'Sepolia Testnet',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://sepolia.infura.io/v3/'],
-    blockExplorerUrls: ['https://sepolia.etherscan.io']
+    rpcUrls: [import.meta.env.VITE_SEPOLIA_RPC_URL || 'https://sepolia.infura.io/v3/'],
+    blockExplorerUrls: [import.meta.env.VITE_SEPOLIA_EXPLORER || 'https://sepolia.etherscan.io']
   },
   holesky: {
     chainId: '0x4268',
     chainName: 'Holesky Testnet',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://ethereum-holesky.publicnode.com'],
-    blockExplorerUrls: ['https://holesky.etherscan.io']
+    rpcUrls: [import.meta.env.VITE_HOLESKY_RPC_URL || 'https://ethereum-holesky.publicnode.com'],
+    blockExplorerUrls: [import.meta.env.VITE_HOLESKY_EXPLORER || 'https://holesky.etherscan.io']
   },
   hoodi: {
     chainId: '0x88BB0',
     chainName: 'Ethereum Hoodi',
     nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-    rpcUrls: ['https://ethereum-hoodi-rpc.publicnode.com'],
-    blockExplorerUrls: ['https://hoodi.etherscan.io']
+    rpcUrls: [import.meta.env.VITE_HOODI_RPC_URL || 'https://ethereum-hoodi-rpc.publicnode.com'],
+    blockExplorerUrls: [import.meta.env.VITE_HOODI_EXPLORER || 'https://hoodi.etherscan.io']
   }
 }
 
@@ -393,16 +394,21 @@ export function Web3Provider({ children }) {
       console.error('❌ Error sending transaction:', error)
       
       // Manejar diferentes tipos de errores
-      if (error.code === 'ACTION_REJECTED') {
-        toast.error('Transacción rechazada por el usuario')
+      if (error.code === 'ACTION_REJECTED' || 
+          error.code === 4001 || 
+          error.message?.includes('user rejected') ||
+          error.message?.includes('User denied transaction signature')) {
+        toast.error('Transacción cancelada por el usuario. Puedes intentar nuevamente cuando estés listo.', { duration: 4000 })
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
-        toast.error('Fondos insuficientes')
+        toast.error('Fondos insuficientes. Verifica tu balance antes de continuar.')
       } else if (error.code === 'NETWORK_ERROR') {
         toast.error('Error de red. Verifica que estés en la red correcta.')
       } else if (error.message?.includes('network changed')) {
         toast.error('La red cambió durante la transacción. Inténtalo de nuevo.')
+      } else if (error.message?.includes('gas')) {
+        toast.error('Error de gas. Intenta aumentar el límite de gas.')
       } else {
-        toast.error('Error al enviar la transacción')
+        toast.error(`Error al enviar la transacción: ${error.message || 'Error desconocido'}`)
       }
       
       return false

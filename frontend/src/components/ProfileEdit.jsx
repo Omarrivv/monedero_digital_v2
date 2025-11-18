@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Camera, Save, X, Mail, Phone, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import API_CONFIG from '../config/apiConfig.js';
 
 const ProfileEdit = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -14,7 +15,9 @@ const ProfileEdit = ({ user, onClose, onUpdate }) => {
   const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+  
+  // 🚀 USAR CONFIGURACIÓN CENTRALIZADA - NO MÁS URLs HARDCODEADAS
+  const API_BASE = API_CONFIG.BASE_URL;
 
   useEffect(() => {
     if (user) {
