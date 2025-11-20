@@ -42,6 +42,9 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Serve temporary images
+app.use("/temp-images", express.static(path.join(__dirname, "temp-images")));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
@@ -75,7 +78,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/limites', limitesNuevos);
 app.use('/api/limites-simples', limitesSimples);
 app.use('/api/transacciones-simples', transaccionesSimples);
-app.use('/api/upload-simple', uploadSimple);
+app.use('/api/upload', uploadSimple);
 app.use('/api/comercio', comercioRoutes);
 app.use('/api/analytics', analyticsRoutes);
 

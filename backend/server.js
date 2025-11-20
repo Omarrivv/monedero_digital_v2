@@ -59,8 +59,7 @@ console.log(
   `   MongoDB: ${config.MONGODB_URI ? "✅ Configured" : "❌ Missing"}`
 );
 console.log(
-  `   Cloudinary: ${
-    config.CLOUDINARY.CONFIGURED ? "✅ Configured" : "❌ Missing"
+  `   Cloudinary: ${config.CLOUDINARY.CONFIGURED ? "✅ Configured" : "❌ Missing"
   }`
 );
 console.log(`   Debug Mode: ${config.DEBUG ? "✅ Enabled" : "❌ Disabled"}`);
@@ -323,7 +322,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/limites", limitesNuevos);
 app.use("/api/limites-simples", limitesSimples);
 app.use("/api/transacciones-simples", transaccionesSimples);
-app.use("/api/upload-simple", uploadSimple);
+app.use("/api/upload", uploadSimple);
 app.use("/api/comercio", comercioRoutes);
 app.use("/api/analytics", analyticsRoutes);
 

@@ -47,6 +47,19 @@ function PadreDashboard() {
   const [hijoParaLimites, setHijoParaLimites] = useState(null)
   const [redSeleccionada, setRedSeleccionada] = useState('todas')
   const [transaccionesFiltradas, setTransaccionesFiltradas] = useState([])
+  
+  // Estados para agregar red personalizada
+  const [mostrarModalAgregarRed, setMostrarModalAgregarRed] = useState(false)
+  const [nuevaRed, setNuevaRed] = useState({
+    key: '',
+    chainName: '',
+    chainId: '',
+    rpcUrl: '',
+    blockExplorerUrl: '',
+    currencyName: 'ETH',
+    currencySymbol: 'ETH'
+  })
+  
   const [nuevoHijo, setNuevoHijo] = useState({
     nombre: '',
     apellido: '',
@@ -60,46 +73,78 @@ function PadreDashboard() {
   })
   
   const { user, children, registerHijo, setSpendingLimits, updateUser, loadChildren } = useAuth()
-  const { balance, sendTransaction, refreshBalance, getBalanceDirectly, network, account, supportedNetworks, switchNetwork } = useWeb3()
+  const { 
+    balance, 
+    sendTransaction, 
+    refreshBalance, 
+    getBalanceDirectly, 
+    network, 
+    account, 
+    supportedNetworks, 
+    switchNetwork,
+    customNetworks,
+    addCustomNetwork,
+    removeCustomNetwork,
+    getSupportedNetworks
+  } = useWeb3()
 
-  // Redes disponibles
-  const redesDisponibles = [
-    { 
-      id: 'todas', 
-      nombre: 'Todas las Redes', 
-      chainId: null,
-      color: 'bg-gray-100 text-gray-800',
-      icon: '🌐'
-    },
-    { 
-      id: 'ethereum', 
-      nombre: 'Ethereum Mainnet', 
-      chainId: '1',
-      color: 'bg-blue-100 text-blue-800',
-      icon: '🔷'
-    },
-    { 
-      id: 'sepolia', 
-      nombre: 'Sepolia Testnet', 
-      chainId: '11155111',
-      color: 'bg-purple-100 text-purple-800',
-      icon: '🟣'
-    },
-    { 
-      id: 'holesky', 
-      nombre: 'Holesky Testnet', 
-      chainId: '17000',
-      color: 'bg-orange-100 text-orange-800',
-      icon: '🟠'
-    },
-    { 
-      id: 'hoodi', 
-      nombre: 'Ethereum Hoodi', 
-      chainId: '560048',
-      color: 'bg-green-100 text-green-800',
-      icon: '🟢'
-    }
-  ]
+  // Generar redes disponibles dinámicamente
+  const getRedesDisponibles = () => {
+    const redes = [
+      { 
+        id: 'todas', 
+        nombre: 'Todas las Redes', 
+        chainId: null,
+        color: 'bg-gray-100 text-gray-800',
+        icon: '🌐'
+      },
+      { 
+        id: 'ethereum', 
+        nombre: 'Ethereum Mainnet', 
+        chainId: '1',
+        color: 'bg-blue-100 text-blue-800',
+        icon: '🔷'
+      },
+      { 
+        id: 'sepolia', 
+        nombre: 'Sepolia Testnet', 
+        chainId: '11155111',
+        color: 'bg-purple-100 text-purple-800',
+        icon: '🟣'
+      },
+      { 
+        id: 'holesky', 
+        nombre: 'Holesky Testnet', 
+        chainId: '17000',
+        color: 'bg-orange-100 text-orange-800',
+        icon: '🟠'
+      },
+      { 
+        id: 'hoodi', 
+        nombre: 'Ethereum Hoodi', 
+        chainId: '560048',
+        color: 'bg-green-100 text-green-800',
+        icon: '🟢'
+      }
+    ]
+
+    // Agregar redes personalizadas
+    Object.keys(customNetworks || {}).forEach(key => {
+      const network = customNetworks[key]
+      redes.push({
+        id: key,
+        nombre: network.chainName,
+        chainId: parseInt(network.chainId, 16).toString(),
+        color: 'bg-indigo-100 text-indigo-800',
+        icon: '⚡',
+        isCustom: true
+      })
+    })
+
+    return redes
+  }
+
+  const redesDisponibles = getRedesDisponibles()
 
   // Función para obtener información de la red por chainId
   const getRedInfo = (chainId) => {
@@ -116,6 +161,33 @@ function PadreDashboard() {
   const handleCambiarRed = async (redId) => {
     if (redId === 'todas') {
       setRedSeleccionada('todas')
+      return
+    }
+
+    // Validar si la red es soportada
+    const red = redesDisponibles.find(r => r.id === redId)
+    if (!red) {
+      toast.error('Red no soportada: no existe en la lista de redes.')
+      console.error('Red no soportada: id no encontrado', redId)
+      return
+    }
+    // Si el chainId está duplicado con una predeterminada, mostrar error y opción de eliminar
+    const redesPredeterminadas = ['1','11155111','17000','560048']
+    if (red.isCustom && redesPredeterminadas.includes(red.chainId)) {
+      toast((t) => (
+        <span>
+          Red personalizada con Chain ID duplicado.<br/>
+          <b>{red.nombre}</b> ({red.chainId})<br/>
+          <button
+            className="bg-red-500 text-white px-2 py-1 rounded mt-2"
+            onClick={() => {
+              handleEliminarRed(red.id)
+              toast.dismiss(t.id)
+            }}
+          >Eliminar red</button>
+        </span>
+      ), { duration: 8000 })
+      console.error('Red personalizada con Chain ID duplicado:', red)
       return
     }
 
@@ -243,6 +315,68 @@ function PadreDashboard() {
 
   const getLimiteDiarioActual = (hijo) => {
     return limitesHijos[hijo._id] || 0
+  }
+
+  // Funciones para manejar redes personalizadas
+  const handleAgregarRed = async (e) => {
+    e.preventDefault()
+    if (!nuevaRed.key || !nuevaRed.chainName || !nuevaRed.chainId || !nuevaRed.rpcUrl) {
+      toast.error('Por favor completa todos los campos obligatorios')
+      return
+    }
+
+    // Validar que el chainId no esté duplicado
+    const chainIdStr = nuevaRed.chainId.toString()
+    const redesPredeterminadas = [
+      '1', // Ethereum
+      '11155111', // Sepolia
+      '17000', // Holesky
+      '560048' // Hoodi
+    ]
+    // Buscar duplicados en predeterminadas y personalizadas
+    const yaExiste = redesPredeterminadas.includes(chainIdStr) ||
+      Object.values(customNetworks || {}).some(net => {
+        const customId = parseInt(net.chainId, 16).toString()
+        return customId === chainIdStr
+      })
+    if (yaExiste) {
+      toast.error('Ya existe una red con ese Chain ID (predeterminada o personalizada).')
+      console.error('Intento de agregar red duplicada. Chain ID:', chainIdStr)
+      return
+    }
+
+    const networkConfig = {
+      key: nuevaRed.key,
+      chainName: nuevaRed.chainName,
+      chainId: nuevaRed.chainId,
+      nativeCurrency: {
+        name: nuevaRed.currencyName,
+        symbol: nuevaRed.currencySymbol,
+        decimals: 18
+      },
+      rpcUrls: [nuevaRed.rpcUrl],
+      blockExplorerUrls: nuevaRed.blockExplorerUrl ? [nuevaRed.blockExplorerUrl] : []
+    }
+
+    const success = await addCustomNetwork(networkConfig)
+    if (success) {
+      setMostrarModalAgregarRed(false)
+      setNuevaRed({
+        key: '',
+        chainName: '',
+        chainId: '',
+        rpcUrl: '',
+        blockExplorerUrl: '',
+        currencyName: 'ETH',
+        currencySymbol: 'ETH'
+      })
+    }
+  }
+
+  const handleEliminarRed = (networkKey) => {
+    if (confirm(`¿Estás seguro de que quieres eliminar la red "${networkKey}"?`)) {
+      removeCustomNetwork(networkKey)
+    }
   }
 
   const vistas = [
@@ -529,8 +663,32 @@ function PadreDashboard() {
                   <span className="text-base">{red.icon}</span>
                   <span className="hidden sm:inline">{red.nombre}</span>
                   <span className="sm:hidden">{red.id === 'todas' ? 'Todas' : red.nombre.split(' ')[0]}</span>
+                  {red.isCustom && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleEliminarRed(red.id)
+                      }}
+                      className="ml-1 text-red-500 hover:text-red-700 cursor-pointer select-none"
+                      title="Eliminar red personalizada"
+                    >
+                      ×
+                    </span>
+                  )}
                 </button>
               ))}
+              
+              {/* Botón para agregar red personalizada */}
+              <button
+                onClick={() => setMostrarModalAgregarRed(true)}
+                className="flex items-center space-x-1 px-3 py-2 rounded-lg text-sm font-medium border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-all bg-gray-50"
+                title="Agregar red personalizada"
+              >
+                <span className="text-base">➕</span>
+                <span className="hidden sm:inline">Agregar Red</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1103,6 +1261,135 @@ function PadreDashboard() {
                 Cerrar
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Modal Agregar Red Personalizada */}
+      {mostrarModalAgregarRed && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-xl p-6 w-full max-w-md mx-4"
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Agregar Red Personalizada</h3>
+            
+            <form onSubmit={handleAgregarRed} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Clave de Red <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={nuevaRed.key}
+                  onChange={(e) => setNuevaRed({...nuevaRed, key: e.target.value})}
+                  placeholder="ej: mi-red-custom"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Alias interno para identificar tu red personalizada en la app. No afecta la conexión real, solo sirve para distinguirla en tu lista de redes.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre de la Red <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={nuevaRed.chainName}
+                  onChange={(e) => setNuevaRed({...nuevaRed, chainName: e.target.value})}
+                  placeholder="ej: Mi Red Personal"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Chain ID <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={nuevaRed.chainId}
+                  onChange={(e) => setNuevaRed({...nuevaRed, chainId: e.target.value})}
+                  placeholder="ej: 1234 o 0x4d2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL RPC <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={nuevaRed.rpcUrl}
+                  onChange={(e) => setNuevaRed({...nuevaRed, rpcUrl: e.target.value})}
+                  placeholder="https://mi-rpc-url.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL del Block Explorer (opcional)
+                </label>
+                <input
+                  type="url"
+                  value={nuevaRed.blockExplorerUrl}
+                  onChange={(e) => setNuevaRed({...nuevaRed, blockExplorerUrl: e.target.value})}
+                  placeholder="https://mi-explorer.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre de Moneda
+                  </label>
+                  <input
+                    type="text"
+                    value={nuevaRed.currencyName}
+                    onChange={(e) => setNuevaRed({...nuevaRed, currencyName: e.target.value})}
+                    placeholder="ETH"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Símbolo
+                  </label>
+                  <input
+                    type="text"
+                    value={nuevaRed.currencySymbol}
+                    onChange={(e) => setNuevaRed({...nuevaRed, currencySymbol: e.target.value})}
+                    placeholder="ETH"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setMostrarModalAgregarRed(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Agregar Red
+                </button>
+              </div>
+            </form>
           </motion.div>
         </div>
       )}

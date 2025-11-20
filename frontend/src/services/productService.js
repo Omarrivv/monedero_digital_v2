@@ -1,11 +1,11 @@
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = '/api'
 
 class ProductService {
   // Obtener todos los productos con filtros
   async getProducts(filters = {}) {
     try {
       const queryParams = new URLSearchParams()
-      
+
       Object.keys(filters).forEach(key => {
         if (filters[key] !== undefined && filters[key] !== '') {
           queryParams.append(key, filters[key])
@@ -13,7 +13,7 @@ class ProductService {
       })
 
       const response = await fetch(`${API_URL}/products?${queryParams}`)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener productos')
       }
@@ -29,7 +29,7 @@ class ProductService {
   async getProductsByComercio(comercioId) {
     try {
       const response = await fetch(`${API_URL}/products?comercio=${comercioId}`)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener productos del comercio')
       }
@@ -45,7 +45,7 @@ class ProductService {
   async getProduct(productId) {
     try {
       const response = await fetch(`${API_URL}/products/${productId}`)
-      
+
       if (!response.ok) {
         throw new Error('Producto no encontrado')
       }
@@ -61,13 +61,13 @@ class ProductService {
   async createProduct(productData) {
     try {
       const token = localStorage.getItem('authToken')
-      
+
       if (!token) {
         throw new Error('No hay token de autenticación')
       }
 
       const formData = new FormData()
-      
+
       // Agregar campos de texto
       Object.keys(productData).forEach(key => {
         if (key !== 'images' && productData[key] !== undefined) {
@@ -78,7 +78,7 @@ class ProductService {
       // Agregar imágenes si existen
       if (productData.images && productData.images.length > 0) {
         productData.images.forEach(image => {
-          formData.append('images', image)
+          formData.append('productImages', image)
         })
       }
 
@@ -106,13 +106,13 @@ class ProductService {
   async getMyProducts(filters = {}) {
     try {
       const token = localStorage.getItem('authToken')
-      
+
       if (!token) {
         throw new Error('No hay token de autenticación')
       }
 
       const queryParams = new URLSearchParams()
-      
+
       Object.keys(filters).forEach(key => {
         if (filters[key] !== undefined && filters[key] !== '') {
           queryParams.append(key, filters[key])
@@ -140,13 +140,13 @@ class ProductService {
   async updateProduct(productId, productData) {
     try {
       const token = localStorage.getItem('authToken')
-      
+
       if (!token) {
         throw new Error('No hay token de autenticación')
       }
 
       const formData = new FormData()
-      
+
       // Agregar campos de texto
       Object.keys(productData).forEach(key => {
         if (key !== 'images' && productData[key] !== undefined) {
@@ -158,7 +158,7 @@ class ProductService {
       if (productData.images && productData.images.length > 0) {
         productData.images.forEach(image => {
           if (image instanceof File) {
-            formData.append('images', image)
+            formData.append('productImages', image)
           }
         })
       }
@@ -187,7 +187,7 @@ class ProductService {
   async deleteProduct(productId) {
     try {
       const token = localStorage.getItem('authToken')
-      
+
       if (!token) {
         throw new Error('No hay token de autenticación')
       }
@@ -219,7 +219,7 @@ class ProductService {
       }
 
       const response = await fetch(`${API_URL}/products/search/${encodeURIComponent(query)}?limit=${limit}`)
-      
+
       if (!response.ok) {
         throw new Error('Error en la búsqueda')
       }
@@ -235,7 +235,7 @@ class ProductService {
   async getCategories() {
     try {
       const response = await fetch(`${API_URL}/products/categories/list`)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener categorías')
       }
@@ -251,7 +251,7 @@ class ProductService {
   async getFeaturedProducts(limit = 8) {
     try {
       const response = await fetch(`${API_URL}/products/featured/list?limit=${limit}`)
-      
+
       if (!response.ok) {
         throw new Error('Error al obtener productos destacados')
       }
@@ -267,7 +267,7 @@ class ProductService {
   async deleteProductImage(productId, imageIndex) {
     try {
       const token = localStorage.getItem('authToken')
-      
+
       if (!token) {
         throw new Error('No hay token de autenticación')
       }

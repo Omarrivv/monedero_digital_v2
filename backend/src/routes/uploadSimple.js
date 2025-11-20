@@ -1,54 +1,12 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { uploadSingleImage, handleUploadErrors } = require('../middleware/upload');
 
 const router = express.Router();
 
-// Configuración simple de multer para guardar archivos localmente
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../../temp-images');
-    
-    // Crear directorio si no existe
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Generar nombre único
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB
-  },
-  fileFilter: function (req, file, cb) {
-    // Verificar que sea imagen
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Solo se permiten imágenes'));
-    }
-  }
-});
-
-// Endpoint simple para subir imagen
-router.post('/image', upload.single('image'), (req, res) => {
+// Endpoint para subir imagen usando Cloudinary
+router.post('/image', uploadSingleImage, handleUploadErrors, (req, res) => {
   try {
-    console.log('📁 Upload simple iniciado');
-    console.log('📋 File:', req.file ? {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      size: req.file.size,
-      path: req.file.path
-    } : 'No file');
+    console.log('📁 Upload simple iniciado (Cloudinary)');
 
     if (!req.file) {
       return res.status(400).json({
@@ -57,10 +15,10 @@ router.post('/image', upload.single('image'), (req, res) => {
       });
     }
 
-    // Generar URL para acceder a la imagen
-    const imageUrl = `/temp-images/${req.file.filename}`;
+    // La URL de Cloudinary ya viene en req.file.path gracias a multer-storage-cloudinary
+    const imageUrl = req.file.path;
 
-    console.log('✅ Imagen guardada:', imageUrl);
+    console.log('✅ Imagen guardada en Cloudinary:', imageUrl);
 
     res.json({
       success: true,
@@ -82,11 +40,11 @@ router.post('/image', upload.single('image'), (req, res) => {
   }
 });
 
-// Endpoint para registro (alias)
-router.post('/register-image', upload.single('image'), (req, res) => {
+// Endpoint para registro (alias) - usa la misma lógica de Cloudinary
+router.post('/register-image', uploadSingleImage, handleUploadErrors, (req, res) => {
   try {
-    console.log('📁 Upload de registro iniciado');
-    
+    console.log('📁 Upload de registro iniciado (Cloudinary)');
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -94,9 +52,9 @@ router.post('/register-image', upload.single('image'), (req, res) => {
       });
     }
 
-    const imageUrl = `/temp-images/${req.file.filename}`;
+    const imageUrl = req.file.path;
 
-    console.log('✅ Imagen de registro guardada:', imageUrl);
+    console.log('✅ Imagen de registro guardada en Cloudinary:', imageUrl);
 
     res.json({
       success: true,

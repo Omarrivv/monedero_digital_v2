@@ -159,6 +159,10 @@ router.get("/verify", auth, async (req, res) => {
         walletAddress: user.walletAddress,
         profileImage: user.profileImage,
         lastLogin: user.lastLogin,
+        spendingLimits: user.spendingLimits,
+        allowance: user.allowance,
+        age: user.age,
+        parent: user.parent
       },
     });
   } catch (error) {
@@ -362,10 +366,10 @@ router.post("/register/padre", async (req, res) => {
     // Generar token
     console.log("🔑 Generando token JWT...");
     const token = jwt.sign(
-      { 
-        userId: user._id, 
-        role: user.role, 
-        walletAddress: user.walletAddress 
+      {
+        userId: user._id,
+        role: user.role,
+        walletAddress: user.walletAddress
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -402,13 +406,13 @@ router.post("/register/padre", async (req, res) => {
     if (error.name === "ValidationError") {
       console.error("❌ Error de validación:", error.errors);
       errorMessage = "Datos de entrada inválidos";
-      
+
       // Detalles específicos de validación
-      const validationErrors = Object.keys(error.errors).map(key => 
+      const validationErrors = Object.keys(error.errors).map(key =>
         `${key}: ${error.errors[key].message}`
       );
       console.error("❌ Errores de validación específicos:", validationErrors);
-      
+
     } else if (error.code === 11000) {
       console.error("❌ Error de duplicado:", error.keyPattern);
       errorMessage = "El email o wallet address ya están registrados";
@@ -437,19 +441,29 @@ router.post("/register/padre", async (req, res) => {
 
 router.post("/register/comercio", async (req, res) => {
   try {
-    const userData = { ...req.body, role: "comercio" };
+    console.log("🔍 Registro de comercio iniciado");
+    console.log("📋 Body recibido:", JSON.stringify(req.body, null, 2));
 
     const {
-      nombre,
+      nombreComercio,
+      nombrePropietario,
       email,
       walletAddress,
       telefono,
       categoria,
       descripcion,
       direccion,
-      logoUrl,
-      bannerUrl,
-    } = userData;
+      imagenes,
+      horarioAtencion
+    } = req.body;
+
+    // Validar campos requeridos
+    if (!nombreComercio || !email || !walletAddress) {
+      return res.status(400).json({
+        success: false,
+        message: "Faltan campos requeridos: nombreComercio, email, walletAddress",
+      });
+    }
 
     // Verificar si el usuario ya existe
     let user = await User.findOne({
@@ -463,18 +477,33 @@ router.post("/register/comercio", async (req, res) => {
       });
     }
 
+    // Generar password aleatorio para cumplir con el modelo
+    const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+    // Formatear dirección
+    let formattedAddress = "";
+    if (direccion && typeof direccion === 'object') {
+      formattedAddress = `${direccion.calle || ''}, ${direccion.ciudad || ''}, ${direccion.estado || ''}, ${direccion.codigoPostal || ''}`;
+    } else if (typeof direccion === 'string') {
+      formattedAddress = direccion;
+    }
+
     // Crear nuevo comercio
     user = new User({
-      name: nombre,
+      name: nombreComercio, // Usar nombre del comercio como nombre principal
+      apellido: nombrePropietario, // Guardar propietario en apellido (opcional)
       email,
       role: "comercio",
       walletAddress,
+      password: hashedPassword,
       telefono,
       businessCategory: categoria,
-      businessDescription: descripcion,
-      businessAddress: direccion,
-      profileImage: logoUrl,
-      bannerImage: bannerUrl,
+      description: descripcion, // Mapear a description (según modelo)
+      address: formattedAddress, // Mapear a address (según modelo)
+      profileImage: imagenes?.logo || null,
+      // bannerImage no está en el esquema actual, se ignora
     });
 
     await user.save();
@@ -483,7 +512,7 @@ router.post("/register/comercio", async (req, res) => {
     const token = jwt.sign(
       { userId: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE }
+      { expiresIn: process.env.JWT_EXPIRE || '7d' }
     );
 
     res.json({
@@ -496,18 +525,27 @@ router.post("/register/comercio", async (req, res) => {
         role: user.role,
         walletAddress: user.walletAddress,
         businessCategory: user.businessCategory,
-        businessDescription: user.businessDescription,
-        businessAddress: user.businessAddress,
+        description: user.description,
+        address: user.address,
         profileImage: user.profileImage,
-        bannerImage: user.bannerImage,
       },
       token,
     });
   } catch (error) {
     console.error("Error al registrar comercio:", error);
+
+    // Manejo de errores de validación
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(val => val.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: "Error del servidor",
+      message: "Error del servidor: " + error.message,
     });
   }
 });
@@ -687,6 +725,10 @@ router.get("/check/:walletAddress", async (req, res) => {
         role: user.role,
         walletAddress: user.walletAddress,
         profileImage: user.profileImage || user.fotoPerfil,
+        spendingLimits: user.spendingLimits,
+        allowance: user.allowance,
+        age: user.age,
+        parent: user.parent
       };
 
       // Si es padre, agregar children si existen

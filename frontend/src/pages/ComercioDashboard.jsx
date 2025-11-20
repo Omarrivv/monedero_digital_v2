@@ -80,41 +80,6 @@ function ComercioDashboard() {
     }
   }
 
-  const estadisticasEjemplo = {
-    ventasHoy: 156.50,
-    ventasSemana: 1240.00,
-    ventasMes: 4850.00,
-    clientesUnicos: 47,
-    productosVendidos: 89
-  }
-
-  const ventasRecientes = [
-    {
-      id: 1,
-      producto: "Hamburguesa Clásica",
-      cliente: "Juan P.",
-      monto: 8.99,
-      fecha: new Date(),
-      estado: "completada"
-    },
-    {
-      id: 2,
-      producto: "Papas Fritas x2",
-      cliente: "María G.",
-      monto: 7.00,
-      fecha: new Date(Date.now() - 3600000),
-      estado: "completada"
-    },
-    {
-      id: 3,
-      producto: "Combo #1",
-      cliente: "Pedro L.",
-      monto: 12.50,
-      fecha: new Date(Date.now() - 7200000),
-      estado: "pendiente"
-    }
-  ]
-
   const handleAgregarProducto = async (e) => {
     e.preventDefault()
     
@@ -212,7 +177,7 @@ function ComercioDashboard() {
           </div>
           <div className="text-right">
             <div className="text-sm text-orange-100">Balance Total</div>
-            <div className="text-2xl font-bold">${estadisticasEjemplo.ventasMes.toFixed(2)}</div>
+            <div className="text-2xl font-bold">${0.00}</div>
           </div>
         </div>
       </div>
@@ -254,7 +219,7 @@ function ComercioDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-medium text-gray-600">Ventas Hoy</h3>
-                    <p className="text-2xl font-bold text-gray-900">${estadisticasEjemplo.ventasHoy}</p>
+                    <p className="text-2xl font-bold text-gray-900">${0.00}</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-green-600" />
                 </div>
@@ -264,7 +229,7 @@ function ComercioDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-medium text-gray-600">Ventas Semana</h3>
-                    <p className="text-2xl font-bold text-gray-900">${estadisticasEjemplo.ventasSemana}</p>
+                    <p className="text-2xl font-bold text-gray-900">${0.00}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-blue-600" />
                 </div>
@@ -284,7 +249,7 @@ function ComercioDashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-medium text-gray-600">Clientes</h3>
-                    <p className="text-2xl font-bold text-gray-900">{estadisticasEjemplo.clientesUnicos}</p>
+                    <p className="text-2xl font-bold text-gray-900">{0}</p>
                   </div>
                   <Store className="h-8 w-8 text-orange-600" />
                 </div>
@@ -301,29 +266,7 @@ function ComercioDashboard() {
               </div>
               
               <div className="space-y-3">
-                {ventasRecientes.map(venta => (
-                  <div key={venta.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                        <DollarSign className="h-5 w-5 text-orange-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">{venta.producto}</h4>
-                        <p className="text-sm text-gray-600">Cliente: {venta.cliente}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">${venta.monto}</div>
-                      <div className={`text-xs px-2 py-1 rounded-full ${
-                        venta.estado === 'completada' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {venta.estado}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {/* Aquí se renderizarían las ventas recientes si las hubiera */}
               </div>
             </div>
 
@@ -468,20 +411,20 @@ function ComercioDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="card">
                 <h3 className="font-medium text-gray-600 mb-2">Ventas del Mes</h3>
-                <p className="text-3xl font-bold text-green-600">${estadisticasEjemplo.ventasMes}</p>
+                <p className="text-3xl font-bold text-green-600">${0.00}</p>
                 <p className="text-sm text-gray-500">+12% vs mes anterior</p>
               </div>
               
               <div className="card">
                 <h3 className="font-medium text-gray-600 mb-2">Productos Vendidos</h3>
-                <p className="text-3xl font-bold text-blue-600">{estadisticasEjemplo.productosVendidos}</p>
+                <p className="text-3xl font-bold text-blue-600">{0}</p>
                 <p className="text-sm text-gray-500">Este mes</p>
               </div>
               
               <div className="card">
                 <h3 className="font-medium text-gray-600 mb-2">Ticket Promedio</h3>
                 <p className="text-3xl font-bold text-purple-600">
-                  ${(estadisticasEjemplo.ventasMes / estadisticasEjemplo.productosVendidos).toFixed(2)}
+                  ${(0.00).toFixed(2)}
                 </p>
                 <p className="text-sm text-gray-500">Por transacción</p>
               </div>
@@ -491,26 +434,7 @@ function ComercioDashboard() {
             <div className="card">
               <h3 className="text-lg font-semibold mb-4">Productos Más Vendidos</h3>
               <div className="space-y-3">
-                {productos.slice(0, 5).map((producto, index) => (
-                  <div key={producto.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <span className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center text-sm font-medium">
-                        {index + 1}
-                      </span>
-                      <span className="text-2xl">{producto.imagen}</span>
-                      <div>
-                        <h4 className="font-medium">{producto.nombre}</h4>
-                        <p className="text-sm text-gray-600">${producto.precio}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{Math.floor(Math.random() * 50) + 5} vendidos</div>
-                      <div className="text-sm text-gray-600">
-                        ${(producto.precio * (Math.floor(Math.random() * 50) + 5)).toFixed(2)} total
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                {/* Aquí se renderizarían los productos más vendidos si los hubiera */}
               </div>
             </div>
           </motion.div>

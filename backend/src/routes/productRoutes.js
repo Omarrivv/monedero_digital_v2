@@ -10,8 +10,8 @@ const router = express.Router();
 router.post('/create', auth, uploadProductImages, async (req, res) => {
   try {
     if (req.user.role !== 'comercio') {
-      return res.status(403).json({ 
-        message: 'Solo los comercios pueden crear productos' 
+      return res.status(403).json({
+        message: 'Solo los comercios pueden crear productos'
       });
     }
 
@@ -19,14 +19,14 @@ router.post('/create', auth, uploadProductImages, async (req, res) => {
 
     // Validaciones básicas
     if (!name || !price) {
-      return res.status(400).json({ 
-        message: 'Nombre y precio son requeridos' 
+      return res.status(400).json({
+        message: 'Nombre y precio son requeridos'
       });
     }
 
     if (price <= 0) {
-      return res.status(400).json({ 
-        message: 'El precio debe ser mayor a 0' 
+      return res.status(400).json({
+        message: 'El precio debe ser mayor a 0'
       });
     }
 
@@ -64,13 +64,13 @@ router.post('/create', auth, uploadProductImages, async (req, res) => {
 // Obtener todos los productos (con filtros)
 router.get('/', async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 12, 
-      category, 
-      comercio, 
-      search, 
-      minPrice, 
+    const {
+      page = 1,
+      limit = 12,
+      category,
+      comercio,
+      search,
+      minPrice,
       maxPrice,
       sortBy = 'createdAt',
       sortOrder = 'desc'
@@ -131,8 +131,8 @@ router.get('/', async (req, res) => {
 router.get('/my-products', auth, async (req, res) => {
   try {
     if (req.user.role !== 'comercio') {
-      return res.status(403).json({ 
-        message: 'Solo los comercios pueden ver sus productos' 
+      return res.status(403).json({
+        message: 'Solo los comercios pueden ver sus productos'
       });
     }
 
@@ -178,14 +178,14 @@ router.get('/:productId', async (req, res) => {
       .populate('comercio', 'name businessCategory profileImage walletAddress');
 
     if (!product) {
-      return res.status(404).json({ 
-        message: 'Producto no encontrado' 
+      return res.status(404).json({
+        message: 'Producto no encontrado'
       });
     }
 
     if (!product.isActive) {
-      return res.status(404).json({ 
-        message: 'Producto no disponible' 
+      return res.status(404).json({
+        message: 'Producto no disponible'
       });
     }
 
@@ -204,8 +204,8 @@ router.get('/:productId', async (req, res) => {
 router.put('/:productId', auth, uploadProductImages, async (req, res) => {
   try {
     if (req.user.role !== 'comercio') {
-      return res.status(403).json({ 
-        message: 'Solo los comercios pueden actualizar productos' 
+      return res.status(403).json({
+        message: 'Solo los comercios pueden actualizar productos'
       });
     }
 
@@ -219,8 +219,8 @@ router.put('/:productId', auth, uploadProductImages, async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({ 
-        message: 'Producto no encontrado' 
+      return res.status(404).json({
+        message: 'Producto no encontrado'
       });
     }
 
@@ -232,8 +232,8 @@ router.put('/:productId', auth, uploadProductImages, async (req, res) => {
     if (price) {
       const parsedPrice = parseFloat(price);
       if (parsedPrice <= 0) {
-        return res.status(400).json({ 
-          message: 'El precio debe ser mayor a 0' 
+        return res.status(400).json({
+          message: 'El precio debe ser mayor a 0'
         });
       }
       updateData.price = parsedPrice;
@@ -271,8 +271,8 @@ router.put('/:productId', auth, uploadProductImages, async (req, res) => {
 router.delete('/:productId/images/:imageIndex', auth, async (req, res) => {
   try {
     if (req.user.role !== 'comercio') {
-      return res.status(403).json({ 
-        message: 'Solo los comercios pueden eliminar imágenes' 
+      return res.status(403).json({
+        message: 'Solo los comercios pueden eliminar imágenes'
       });
     }
 
@@ -284,15 +284,15 @@ router.delete('/:productId/images/:imageIndex', auth, async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({ 
-        message: 'Producto no encontrado' 
+      return res.status(404).json({
+        message: 'Producto no encontrado'
       });
     }
 
     const index = parseInt(imageIndex);
     if (index < 0 || index >= product.images.length) {
-      return res.status(400).json({ 
-        message: 'Índice de imagen inválido' 
+      return res.status(400).json({
+        message: 'Índice de imagen inválido'
       });
     }
 
@@ -316,8 +316,8 @@ router.delete('/:productId/images/:imageIndex', auth, async (req, res) => {
 router.delete('/:productId', auth, async (req, res) => {
   try {
     if (req.user.role !== 'comercio') {
-      return res.status(403).json({ 
-        message: 'Solo los comercios pueden eliminar productos' 
+      return res.status(403).json({
+        message: 'Solo los comercios pueden eliminar productos'
       });
     }
 
@@ -329,8 +329,8 @@ router.delete('/:productId', auth, async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({ 
-        message: 'Producto no encontrado' 
+      return res.status(404).json({
+        message: 'Producto no encontrado'
       });
     }
 
@@ -354,7 +354,7 @@ router.delete('/:productId', auth, async (req, res) => {
 router.get('/categories/list', async (req, res) => {
   try {
     const categories = await Product.distinct('category', { isActive: true });
-    
+
     res.json({
       success: true,
       categories: categories.filter(cat => cat && cat.trim() !== '')
@@ -373,8 +373,8 @@ router.get('/search/:query', async (req, res) => {
     const { limit = 10 } = req.query;
 
     if (!query || query.trim().length < 2) {
-      return res.status(400).json({ 
-        message: 'La búsqueda debe tener al menos 2 caracteres' 
+      return res.status(400).json({
+        message: 'La búsqueda debe tener al menos 2 caracteres'
       });
     }
 
@@ -386,9 +386,9 @@ router.get('/search/:query', async (req, res) => {
         { category: { $regex: query, $options: 'i' } }
       ]
     })
-    .populate('comercio', 'name businessCategory')
-    .limit(parseInt(limit))
-    .sort({ name: 1 });
+      .populate('comercio', 'name businessCategory')
+      .limit(parseInt(limit))
+      .sort({ name: 1 });
 
     res.json({
       success: true,

@@ -114,34 +114,42 @@ function ComercioRegister() {
     }))
   }
 
+  const compressImage = (file, maxWidth = 800, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      const img = new Image()
+      img.onload = () => {
+        const { width, height } = img
+        const ratio = Math.min(maxWidth / width, maxWidth / height)
+        canvas.width = width * ratio
+        canvas.height = height * ratio
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(resolve, 'image/jpeg', quality)
+      }
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   const handleImageUpload = async (e, tipo) => {
     const file = e.target.files[0]
     if (!file) return
-
-    if (file.size > 5 * 1024 * 1024) { // 5MB
-      toast.error('La imagen debe ser menor a 5MB')
-      return
-    }
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Debe ser un archivo de imagen')
-      return
-    }
-
     try {
       setUploadingImages(prev => ({ ...prev, [tipo]: true }))
-      
+      toast.loading('Subiendo imagen... Por favor espere')
+      let fileToUpload = file
+      if (file.size > 2 * 1024 * 1024) {
+        toast.loading('Comprimiendo imagen...')
+        fileToUpload = await compressImage(file)
+      }
       // Preview local
       const reader = new FileReader()
-      reader.onload = (e) => setImagePreviews(prev => ({ ...prev, [tipo]: e.target.result }))
-      reader.readAsDataURL(file)
-
+      reader.onload = (ev) => setImagePreviews(prev => ({ ...prev, [tipo]: ev.target.result }))
+      reader.readAsDataURL(fileToUpload)
       // Upload to Cloudinary
       const formDataUpload = new FormData()
-      formDataUpload.append('image', file)
-      
+      formDataUpload.append('image', fileToUpload)
       const response = await uploadAPI.uploadImageForRegister(formDataUpload)
-      
       if (response.data.success) {
         setFormData(prev => ({
           ...prev,
@@ -154,8 +162,25 @@ function ComercioRegister() {
       }
     } catch (error) {
       console.error('Error uploading image:', error)
-      toast.error('Error al subir la imagen')
+      let errorMessage = 'Error al subir la imagen'
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Timeout: La imagen tardó mucho en subirse. Intente con una imagen más pequeña.'
+      } else if (error.response?.status === 413) {
+        errorMessage = 'La imagen es demasiado grande. Intente con una imagen más pequeña.'
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage = 'Error de conexión. Verifique que el servidor esté corriendo.'
+      }
+      toast.error(errorMessage)
       setImagePreviews(prev => ({ ...prev, [tipo]: null }))
+      setFormData(prev => ({
+        ...prev,
+        imagenes: {
+          ...prev.imagenes,
+          [tipo]: ''
+        }
+      }))
     } finally {
       setUploadingImages(prev => ({ ...prev, [tipo]: false }))
     }

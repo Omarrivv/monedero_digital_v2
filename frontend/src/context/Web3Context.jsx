@@ -44,6 +44,20 @@ export function Web3Provider({ children }) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [balance, setBalance] = useState('0')
   const [isInitialized, setIsInitialized] = useState(false)
+  
+  // Estado para redes personalizadas
+  const [customNetworks, setCustomNetworks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('monedero_custom_networks')
+      return saved ? JSON.parse(saved) : {}
+    } catch (error) {
+      console.warn('Error loading custom networks:', error)
+      return {}
+    }
+  })
+
+  // Combinar redes predefinidas con personalizadas
+  const getAllNetworks = () => ({ ...SUPPORTED_NETWORKS, ...customNetworks })
 
   useEffect(() => {
     let isMounted = true
@@ -475,6 +489,84 @@ export function Web3Provider({ children }) {
     }
   }
 
+  // Función para agregar red personalizada
+  const addCustomNetwork = async (networkConfig) => {
+    try {
+      // Validar configuración
+      const { chainId, chainName, nativeCurrency, rpcUrls, blockExplorerUrls, key } = networkConfig
+      
+      if (!chainId || !chainName || !nativeCurrency || !rpcUrls?.[0] || !key) {
+        throw new Error('Configuración de red incompleta')
+      }
+
+      // Crear configuración normalizada
+      const networkData = {
+        chainId: chainId.startsWith('0x') ? chainId : `0x${parseInt(chainId).toString(16)}`,
+        chainName,
+        nativeCurrency: {
+          name: nativeCurrency.name || 'ETH',
+          symbol: nativeCurrency.symbol || 'ETH', 
+          decimals: nativeCurrency.decimals || 18
+        },
+        rpcUrls,
+        blockExplorerUrls: blockExplorerUrls || []
+      }
+
+      // Verificar que no existe ya
+      const allNetworks = getAllNetworks()
+      if (allNetworks[key]) {
+        throw new Error(`Ya existe una red con la clave "${key}"`)
+      }
+
+      // Intentar agregar a MetaMask primero
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [networkData]
+      })
+
+      // Si se agrega exitosamente a MetaMask, guardar localmente
+      const updatedNetworks = { ...customNetworks, [key]: networkData }
+      setCustomNetworks(updatedNetworks)
+      localStorage.setItem('monedero_custom_networks', JSON.stringify(updatedNetworks))
+      
+      toast.success(`Red "${chainName}" agregada exitosamente`)
+      return true
+    } catch (error) {
+      console.error('Error adding custom network:', error)
+      if (error.code === 4001) {
+        toast.error('Agregado de red cancelado por el usuario')
+      } else {
+        toast.error(`Error al agregar red: ${error.message}`)
+      }
+      return false
+    }
+  }
+
+  // Función para eliminar red personalizada
+  const removeCustomNetwork = (networkKey) => {
+    try {
+      if (!customNetworks[networkKey]) {
+        throw new Error('Red no encontrada')
+      }
+
+      const updatedNetworks = { ...customNetworks }
+      delete updatedNetworks[networkKey]
+      
+      setCustomNetworks(updatedNetworks)
+      localStorage.setItem('monedero_custom_networks', JSON.stringify(updatedNetworks))
+      
+      toast.success('Red personalizada eliminada')
+      return true
+    } catch (error) {
+      console.error('Error removing custom network:', error)
+      toast.error(`Error al eliminar red: ${error.message}`)
+      return false
+    }
+  }
+
+  // Función para obtener todas las redes (predefinidas + personalizadas)
+  const getSupportedNetworks = () => getAllNetworks()
+
   const value = {
     account,
     provider,
@@ -489,7 +581,11 @@ export function Web3Provider({ children }) {
     refreshBalance,
     getBalanceDirectly,
     verifyNetworkStability,
-    supportedNetworks: SUPPORTED_NETWORKS
+    supportedNetworks: SUPPORTED_NETWORKS,
+    customNetworks,
+    addCustomNetwork,
+    removeCustomNetwork,
+    getSupportedNetworks
   }
 
   return (

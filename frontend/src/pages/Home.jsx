@@ -55,27 +55,45 @@ function Home() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link 
                   to="/register/padre" 
-                  className="btn-primary"
+                  className="btn-primary inline-flex items-center justify-center space-x-2"
                   onClick={() => console.log('Click en botón Padre')}
                 >
-                  Soy Padre/Tutor
+                  <Users className="h-5 w-5" />
+                  <span>Soy Padre/Tutor</span>
                 </Link>
                 <Link 
                   to="/register/comercio" 
-                  className="btn-secondary"
+                  className="btn-secondary inline-flex items-center justify-center space-x-2"
                   onClick={() => console.log('Click en botón Comercio')}
                 >
-                  Soy Comercio
+                  <Store className="h-5 w-5" />
+                  <span>Soy Comercio</span>
                 </Link>
                 <Link 
                   to="/login" 
-                  className="btn-outline"
+                  className="btn-outline inline-flex items-center justify-center space-x-2"
                   onClick={() => console.log('Click en botón Login')}
                 >
-                  Soy Hijo (Login)
+                  <Wallet className="h-5 w-5" />
+                  <span>Soy Hijo (Login)</span>
                 </Link>
               </div>
               
+              {/* Información adicional para usuarios existentes */}
+              <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-700 font-medium mb-2">
+                  ¿Ya tienes cuenta?
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center text-sm">
+                  <Link 
+                    to="/login" 
+                    className="text-blue-600 hover:text-blue-800 underline inline-flex items-center space-x-1"
+                  >
+                    <span>Padres y Comercios: Iniciar Sesión</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              </div>
 
             </div>
           )}
