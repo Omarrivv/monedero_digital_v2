@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import { useWeb3 } from '../context/Web3Context'
 import apiService from '../services/apiService'
 import API_CONFIG from '../config/apiConfig'
+import { SIMPLE_TRANSFER_ADDRESS, SIMPLE_TRANSFER_ABI } from '../config/contracts'
+import { ethers } from 'ethers'
 import CalendarioLimites from '../components/calendar/CalendarioLimites'
 import HistorialTransaccionesAvanzado from '../components/transactions/HistorialTransaccionesAvanzado'
 import LimitesSimples from '../components/limits/LimitesSimples'
@@ -15,17 +17,17 @@ import ProfileView from '../components/ProfileView'
 // 🚀 CONFIGURACIÓN DE EXPLORERS DESDE .ENV
 const BLOCKCHAIN_EXPLORERS = {
   '1': import.meta.env.VITE_ETHEREUM_EXPLORER || 'https://etherscan.io',
-  '11155111': import.meta.env.VITE_SEPOLIA_EXPLORER || 'https://sepolia.etherscan.io', 
+  '11155111': import.meta.env.VITE_SEPOLIA_EXPLORER || 'https://sepolia.etherscan.io',
   '17000': import.meta.env.VITE_HOLESKY_EXPLORER || 'https://holesky.etherscan.io',
   '560048': import.meta.env.VITE_HOODI_EXPLORER || 'https://hoodi.etherscan.io'
 }
 
-import { 
-  Users, 
-  Plus, 
-  Wallet, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Users,
+  Plus,
+  Wallet,
+  DollarSign,
+  TrendingUp,
   Settings,
   Send,
   Eye,
@@ -47,7 +49,7 @@ function PadreDashboard() {
   const [hijoParaLimites, setHijoParaLimites] = useState(null)
   const [redSeleccionada, setRedSeleccionada] = useState('todas')
   const [transaccionesFiltradas, setTransaccionesFiltradas] = useState([])
-  
+
   // Estados para agregar red personalizada
   const [mostrarModalAgregarRed, setMostrarModalAgregarRed] = useState(false)
   const [nuevaRed, setNuevaRed] = useState({
@@ -59,7 +61,7 @@ function PadreDashboard() {
     currencyName: 'ETH',
     currencySymbol: 'ETH'
   })
-  
+
   const [nuevoHijo, setNuevoHijo] = useState({
     nombre: '',
     apellido: '',
@@ -71,57 +73,58 @@ function PadreDashboard() {
     hijoId: '',
     monto: ''
   })
-  
+
   const { user, children, registerHijo, setSpendingLimits, updateUser, loadChildren } = useAuth()
-  const { 
-    balance, 
-    sendTransaction, 
-    refreshBalance, 
-    getBalanceDirectly, 
-    network, 
-    account, 
-    supportedNetworks, 
+  const {
+    balance,
+    sendTransaction,
+    refreshBalance,
+    getBalanceDirectly,
+    network,
+    account,
+    supportedNetworks,
     switchNetwork,
     customNetworks,
     addCustomNetwork,
     removeCustomNetwork,
-    getSupportedNetworks
+    getSupportedNetworks,
+    signer
   } = useWeb3()
 
   // Generar redes disponibles dinámicamente
   const getRedesDisponibles = () => {
     const redes = [
-      { 
-        id: 'todas', 
-        nombre: 'Todas las Redes', 
+      {
+        id: 'todas',
+        nombre: 'Todas las Redes',
         chainId: null,
         color: 'bg-gray-100 text-gray-800',
         icon: '🌐'
       },
-      { 
-        id: 'ethereum', 
-        nombre: 'Ethereum Mainnet', 
+      {
+        id: 'ethereum',
+        nombre: 'Ethereum Mainnet',
         chainId: '1',
         color: 'bg-blue-100 text-blue-800',
         icon: '🔷'
       },
-      { 
-        id: 'sepolia', 
-        nombre: 'Sepolia Testnet', 
+      {
+        id: 'sepolia',
+        nombre: 'Sepolia Testnet',
         chainId: '11155111',
         color: 'bg-purple-100 text-purple-800',
         icon: '🟣'
       },
-      { 
-        id: 'holesky', 
-        nombre: 'Holesky Testnet', 
+      {
+        id: 'holesky',
+        nombre: 'Holesky Testnet',
         chainId: '17000',
         color: 'bg-orange-100 text-orange-800',
         icon: '🟠'
       },
-      { 
-        id: 'hoodi', 
-        nombre: 'Ethereum Hoodi', 
+      {
+        id: 'hoodi',
+        nombre: 'Ethereum Hoodi',
         chainId: '560048',
         color: 'bg-green-100 text-green-800',
         icon: '🟢'
@@ -172,12 +175,12 @@ function PadreDashboard() {
       return
     }
     // Si el chainId está duplicado con una predeterminada, mostrar error y opción de eliminar
-    const redesPredeterminadas = ['1','11155111','17000','560048']
+    const redesPredeterminadas = ['1', '11155111', '17000', '560048']
     if (red.isCustom && redesPredeterminadas.includes(red.chainId)) {
       toast((t) => (
         <span>
-          Red personalizada con Chain ID duplicado.<br/>
-          <b>{red.nombre}</b> ({red.chainId})<br/>
+          Red personalizada con Chain ID duplicado.<br />
+          <b>{red.nombre}</b> ({red.chainId})<br />
           <button
             className="bg-red-500 text-white px-2 py-1 rounded mt-2"
             onClick={() => {
@@ -224,10 +227,10 @@ function PadreDashboard() {
   const getExplorerUrl = (txHash) => {
     // Limpiar el hash (remover guión bajo si existe)
     const cleanHash = txHash?.replace(/_+$/, '').trim() || txHash
-    
+
     console.log('🔗 Generando URL del explorer para hash:', cleanHash)
     console.log('🌐 Red actual:', network)
-    
+
     if (!cleanHash) {
       console.log('❌ Hash vacío o inválido')
       return `${BLOCKCHAIN_EXPLORERS['11155111']}/tx/${cleanHash}`
@@ -235,24 +238,24 @@ function PadreDashboard() {
 
     // Determinar la red basada en chainId
     let chainId = network?.chainId
-    
+
     // Convertir BigInt a string si es necesario
     if (typeof chainId === 'bigint') {
       chainId = chainId.toString()
     } else if (typeof chainId === 'number') {
       chainId = chainId.toString()
     }
-    
+
     console.log('🔢 Chain ID detectado:', chainId)
-    
+
     // 🚀 USAR CONFIGURACIÓN CENTRALIZADA DE EXPLORERS
     const explorerBaseUrl = BLOCKCHAIN_EXPLORERS[chainId]
-    
+
     if (explorerBaseUrl) {
       console.log(`🌐 Usando explorer para chain ${chainId}:`, explorerBaseUrl)
       return `${explorerBaseUrl}/tx/${cleanHash}`
     }
-    
+
     // Fallback por defecto (Sepolia)
     console.log('🌐 Red no reconocida, usando Sepolia por defecto')
     return `${BLOCKCHAIN_EXPLORERS['11155111']}/tx/${cleanHash}`
@@ -285,15 +288,15 @@ function PadreDashboard() {
       if (response.ok) {
         const data = await response.json()
         const hoy = new Date().toISOString().split('T')[0]
-        
+
         // Buscar límite para hoy
         const limiteHoy = data.limites?.find(limite => {
           const fechaLimite = new Date(limite.fecha).toISOString().split('T')[0]
           return fechaLimite === hoy
         })
-        
+
         const montoLimite = limiteHoy?.monto || 0
-        
+
         setLimitesHijos(prev => ({
           ...prev,
           [hijoId]: montoLimite
@@ -390,7 +393,7 @@ function PadreDashboard() {
 
   const handleRegistrarHijo = async (e) => {
     e.preventDefault()
-    
+
     if (!nuevoHijo.nombre || !nuevoHijo.apellido || !nuevoHijo.edad || !nuevoHijo.walletAddress || !nuevoHijo.password) {
       toast.error('Por favor completa todos los campos')
       return
@@ -426,7 +429,7 @@ function PadreDashboard() {
 
   const handleTransferirFondos = async (e) => {
     e.preventDefault()
-    
+
     if (!transferencia.hijoId || !transferencia.monto) {
       toast.error('Por favor completa todos los campos')
       return
@@ -480,16 +483,36 @@ function PadreDashboard() {
       // 3. Verificar red antes de enviar transacción
       console.log('🌐 Verificando red antes de transacción...')
       console.log('Red actual:', network?.chainId?.toString())
-      
-      // 4. Ejecutar la transacción blockchain con MetaMask
-      console.log('🔗 Ejecutando transacción blockchain...')
-      toast.loading('Esperando confirmación de MetaMask...', { id: 'transfer-loading' })
-      
-      const tx = await sendTransaction(hijo.walletAddress, monto)
-      
+
+      // 4. Ejecutar la transacción blockchain con MetaMask (Smart Contract)
+      console.log('🔗 Ejecutando transacción blockchain (Smart Contract)...')
+
+      if (!signer) {
+        throw new Error("Wallet no conectada")
+      }
+
+      const contract = new ethers.Contract(SIMPLE_TRANSFER_ADDRESS, SIMPLE_TRANSFER_ABI, signer)
+      const amountInWei = ethers.parseEther(monto.toString())
+
+      // Paso 1: Depositar
+      toast.loading('Paso 1/2: Depositando fondos en el contrato...', { id: 'transfer-loading' })
+      const depositTx = await contract.deposit({ value: amountInWei })
+      console.log('⏳ Esperando confirmación de depósito...')
+      await depositTx.wait()
+      console.log('✅ Depósito confirmado:', depositTx.hash)
+
+      // Paso 2: Transferir
+      toast.loading('Paso 2/2: Asignando fondos al hijo...', { id: 'transfer-loading' })
+      const transferTx = await contract.transfer(hijo.walletAddress, amountInWei)
+      console.log('⏳ Esperando confirmación de transferencia...')
+      await transferTx.wait()
+      console.log('✅ Transferencia interna confirmada:', transferTx.hash)
+
+      const tx = transferTx
+
       if (tx) {
         console.log('✅ Transacción blockchain exitosa:', tx.hash)
-        
+
         // 4. Confirmar la transacción en BD con el hash y red
         await apiService.put(`/transacciones-simples/confirmar/${transactionId}`, {
           txHash: tx.hash,
@@ -498,7 +521,7 @@ function PadreDashboard() {
         })
 
         toast.success(`Transferencia exitosa! Hash: ${tx.hash.slice(0, 10)}...`, { id: 'transfer-loading' })
-        
+
         // 5. Mostrar detalles de la transacción
         console.log('📋 Hash de transacción recibido:', tx.hash)
         setTransaccionCompletada({
@@ -507,11 +530,11 @@ function PadreDashboard() {
           destinatario: hijo.name,
           fecha: new Date().toLocaleString()
         })
-        
+
         // 6. Limpiar formulario y cerrar modal
         setMostrarModalTransferir(false)
         setTransferencia({ hijoId: '', monto: '' })
-        
+
         // 7. Actualizar balance
         if (refreshBalance) {
           refreshBalance()
@@ -519,14 +542,14 @@ function PadreDashboard() {
       }
     } catch (error) {
       console.error('❌ Error en transferencia:', error)
-      
+
       // Manejar diferentes tipos de errores
       if (error.response?.status === 403) {
         toast.error(error.response.data.message || 'No tienes permisos para esta transferencia')
-      } else if (error.code === 'ACTION_REJECTED' || 
-                 error.code === 4001 || 
-                 error.message?.includes('user rejected') ||
-                 error.message?.includes('User denied transaction signature')) {
+      } else if (error.code === 'ACTION_REJECTED' ||
+        error.code === 4001 ||
+        error.message?.includes('user rejected') ||
+        error.message?.includes('User denied transaction signature')) {
         toast.error('Transacción cancelada. Puedes intentar la transferencia nuevamente cuando estés listo.', { duration: 4000 })
       } else if (error.code === 'INSUFFICIENT_FUNDS') {
         toast.error('Fondos insuficientes en tu wallet')
@@ -537,7 +560,7 @@ function PadreDashboard() {
       } else {
         toast.error(`Error en la transferencia: ${error.message || 'Error desconocido'}`)
       }
-      
+
       toast.dismiss('transfer-loading')
     }
   }
@@ -643,7 +666,7 @@ function PadreDashboard() {
               </span>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Cambiar a:</span>
             <div className="flex space-x-2">
@@ -679,7 +702,7 @@ function PadreDashboard() {
                   )}
                 </button>
               ))}
-              
+
               {/* Botón para agregar red personalizada */}
               <button
                 onClick={() => setMostrarModalAgregarRed(true)}
@@ -692,7 +715,7 @@ function PadreDashboard() {
             </div>
           </div>
         </div>
-        
+
         {/* Información adicional de la red */}
         <div className="mt-3 pt-3 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm text-gray-600">
@@ -715,7 +738,7 @@ function PadreDashboard() {
               </select>
             </div>
           </div>
-          
+
           {/* Indicador de red seleccionada */}
           {redSeleccionada !== 'todas' && (
             <div className="mt-2 flex items-center space-x-2">
@@ -738,8 +761,8 @@ function PadreDashboard() {
               onClick={() => setVistaActiva(vista.id)}
               className={`
                 flex items-center space-x-2 px-4 py-2 rounded-md font-medium transition-all
-                ${vistaActiva === vista.id 
-                  ? 'bg-white text-primary-600 shadow-sm' 
+                ${vistaActiva === vista.id
+                  ? 'bg-white text-primary-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
                 }
               `}
@@ -805,7 +828,7 @@ function PadreDashboard() {
                   <UserPlus className="h-5 w-5" />
                   <span>Registrar Hijo</span>
                 </button>
-                
+
                 <button
                   onClick={() => setMostrarModalTransferir(true)}
                   className="btn-secondary flex items-center justify-center space-x-2"
@@ -903,18 +926,18 @@ function PadreDashboard() {
                         <p className="text-sm text-gray-500">ID: {hijo._id || hijo.id}</p>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Saldo disponible:</span>
                         <span className="font-semibold">${hijo.allowance || 0}</span>
                       </div>
-                      
+
                       <div className="flex justify-between">
                         <span className="text-gray-600">Límite diario:</span>
                         <span className="font-semibold">${getLimiteDiarioActual(hijo)}</span>
                       </div>
-                      
+
                       <div className="flex space-x-2 mt-4">
                         <button
                           onClick={() => {
@@ -926,7 +949,7 @@ function PadreDashboard() {
                           <Send className="h-4 w-4" />
                           <span>Transferir</span>
                         </button>
-                        
+
                         <button
                           onClick={() => {
                             setHijoSeleccionado(hijo)
@@ -1028,9 +1051,9 @@ function PadreDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <HistorialTransaccionesAvanzado 
-              userRole="padre" 
-              userId={user?._id} 
+            <HistorialTransaccionesAvanzado
+              userRole="padre"
+              userId={user?._id}
               redFiltro={redSeleccionada}
               redesDisponibles={redesDisponibles}
             />
@@ -1038,7 +1061,7 @@ function PadreDashboard() {
         )}
 
         {vistaActiva === 'profile' && (
-          <ProfileView 
+          <ProfileView
             user={user}
             children={children}
             balance={balance}
@@ -1056,7 +1079,7 @@ function PadreDashboard() {
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4"
           >
             <h3 className="text-lg font-semibold mb-4">Registrar Nuevo Hijo</h3>
-            
+
             <form onSubmit={handleRegistrarHijo} className="space-y-4">
               <input
                 type="text"
@@ -1066,7 +1089,7 @@ function PadreDashboard() {
                 className="input-field"
                 required
               />
-              
+
               <input
                 type="text"
                 placeholder="Apellido"
@@ -1075,7 +1098,7 @@ function PadreDashboard() {
                 className="input-field"
                 required
               />
-              
+
               <input
                 type="number"
                 placeholder="Edad (5-18)"
@@ -1086,7 +1109,7 @@ function PadreDashboard() {
                 max="18"
                 required
               />
-              
+
               <input
                 type="text"
                 placeholder="Dirección de Wallet (0x + 40 caracteres hex)"
@@ -1097,7 +1120,7 @@ function PadreDashboard() {
                 pattern="^0x[a-fA-F0-9]{40}$"
                 title="Debe ser una dirección Ethereum válida (0x seguido de 40 caracteres hexadecimales)"
               />
-              
+
               <input
                 type="password"
                 placeholder="Contraseña para el hijo"
@@ -1106,7 +1129,7 @@ function PadreDashboard() {
                 className="input-field"
                 required
               />
-              
+
               <div className="flex space-x-3 mt-6">
                 <button
                   type="button"
@@ -1136,7 +1159,7 @@ function PadreDashboard() {
             className="bg-white rounded-xl p-6 max-w-md w-full mx-4"
           >
             <h3 className="text-lg font-semibold mb-4">Transferir Fondos</h3>
-            
+
             <form onSubmit={handleTransferirFondos} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Seleccionar Hijo</label>
@@ -1154,7 +1177,7 @@ function PadreDashboard() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-2">Monto (ETH)</label>
                 <input
@@ -1167,13 +1190,13 @@ function PadreDashboard() {
                   required
                 />
               </div>
-              
+
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-600">
                   <strong>Balance disponible:</strong> {parseFloat(balance).toFixed(4)} ETH
                 </p>
               </div>
-              
+
               <div className="flex space-x-3 mt-6">
                 <button
                   type="button"
@@ -1218,11 +1241,11 @@ function PadreDashboard() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8 text-green-600" />
               </div>
-              
+
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 ¡Transferencia Exitosa!
               </h3>
-              
+
               <div className="space-y-3 text-left bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Destinatario:</span>
@@ -1253,7 +1276,7 @@ function PadreDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => setTransaccionCompletada(null)}
                 className="btn-primary w-full"
@@ -1275,7 +1298,7 @@ function PadreDashboard() {
             className="bg-white rounded-xl p-6 w-full max-w-md mx-4"
           >
             <h3 className="text-xl font-bold text-gray-900 mb-4">Agregar Red Personalizada</h3>
-            
+
             <form onSubmit={handleAgregarRed} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1284,7 +1307,7 @@ function PadreDashboard() {
                 <input
                   type="text"
                   value={nuevaRed.key}
-                  onChange={(e) => setNuevaRed({...nuevaRed, key: e.target.value})}
+                  onChange={(e) => setNuevaRed({ ...nuevaRed, key: e.target.value })}
                   placeholder="ej: mi-red-custom"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -1299,7 +1322,7 @@ function PadreDashboard() {
                 <input
                   type="text"
                   value={nuevaRed.chainName}
-                  onChange={(e) => setNuevaRed({...nuevaRed, chainName: e.target.value})}
+                  onChange={(e) => setNuevaRed({ ...nuevaRed, chainName: e.target.value })}
                   placeholder="ej: Mi Red Personal"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -1313,7 +1336,7 @@ function PadreDashboard() {
                 <input
                   type="text"
                   value={nuevaRed.chainId}
-                  onChange={(e) => setNuevaRed({...nuevaRed, chainId: e.target.value})}
+                  onChange={(e) => setNuevaRed({ ...nuevaRed, chainId: e.target.value })}
                   placeholder="ej: 1234 o 0x4d2"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -1327,7 +1350,7 @@ function PadreDashboard() {
                 <input
                   type="url"
                   value={nuevaRed.rpcUrl}
-                  onChange={(e) => setNuevaRed({...nuevaRed, rpcUrl: e.target.value})}
+                  onChange={(e) => setNuevaRed({ ...nuevaRed, rpcUrl: e.target.value })}
                   placeholder="https://mi-rpc-url.com"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -1341,7 +1364,7 @@ function PadreDashboard() {
                 <input
                   type="url"
                   value={nuevaRed.blockExplorerUrl}
-                  onChange={(e) => setNuevaRed({...nuevaRed, blockExplorerUrl: e.target.value})}
+                  onChange={(e) => setNuevaRed({ ...nuevaRed, blockExplorerUrl: e.target.value })}
                   placeholder="https://mi-explorer.com"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -1355,7 +1378,7 @@ function PadreDashboard() {
                   <input
                     type="text"
                     value={nuevaRed.currencyName}
-                    onChange={(e) => setNuevaRed({...nuevaRed, currencyName: e.target.value})}
+                    onChange={(e) => setNuevaRed({ ...nuevaRed, currencyName: e.target.value })}
                     placeholder="ETH"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -1367,7 +1390,7 @@ function PadreDashboard() {
                   <input
                     type="text"
                     value={nuevaRed.currencySymbol}
-                    onChange={(e) => setNuevaRed({...nuevaRed, currencySymbol: e.target.value})}
+                    onChange={(e) => setNuevaRed({ ...nuevaRed, currencySymbol: e.target.value })}
                     placeholder="ETH"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />

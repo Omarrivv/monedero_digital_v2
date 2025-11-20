@@ -7,6 +7,9 @@ import HistorialTransacciones from '../components/transactions/HistorialTransacc
 import HistorialTransaccionesAvanzado from '../components/transactions/HistorialTransaccionesAvanzado'
 import DashboardAnalytics from '../components/analytics/DashboardAnalytics'
 import TiendaComercio from '../components/commerce/TiendaComercio'
+import { SIMPLE_TRANSFER_ADDRESS, SIMPLE_TRANSFER_ABI } from '../config/contracts'
+import { ethers } from 'ethers'
+import toast from 'react-hot-toast'
 import {
   Wallet,
   Eye,
@@ -30,9 +33,11 @@ function HijoDashboard() {
   const [todayLimit, setTodayLimit] = useState(null)
   const [availableBalance, setAvailableBalance] = useState(0)
   const [showNetworks, setShowNetworks] = useState(false)
+  const [withdrawAmount, setWithdrawAmount] = useState('')
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
 
   const { user } = useAuth()
-  const { balance, network, switchNetwork, refreshBalance, getSupportedNetworks, isConnecting } = useWeb3()
+  const { balance, network, switchNetwork, refreshBalance, getSupportedNetworks, isConnecting, signer } = useWeb3()
 
   // Calcular límite de hoy
   useEffect(() => {
@@ -314,8 +319,8 @@ function HijoDashboard() {
                         <span className="text-xl font-bold text-green-600">${product.price}</span>
                         <button
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1 ${product.price > availableBalance
-                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              : 'bg-green-600 text-white hover:bg-green-700'
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                           onClick={() => {
                             if (product.price <= availableBalance) {
